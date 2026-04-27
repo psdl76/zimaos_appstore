@@ -1,0 +1,27 @@
+name: Build and Release App Store
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build appstore.tar.gz
+        run: |
+          tar -czf appstore.tar.gz Apps/ category-list.json recommend-list.json
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: App Store
+          files: appstore.tar.gz

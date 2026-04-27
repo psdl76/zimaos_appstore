@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Cloud",
+    "font": "cloud-outline",
+    "description": "Self-hosted cloud and file storage apps"
+  },
+  {
+    "name": "Network",
+    "font": "lan",
+    "description": "Networking, DNS, and VPN apps"
+  },
+  {
+    "name": "Photography",
+    "font": "image-outline",
+    "description": "Photo and video management apps"
+  },
+  {
+    "name": "Security",
+    "font": "shield-lock-outline",
+    "description": "Security and privacy apps"
+  },
+  {
+    "name": "Smart Home",
+    "font": "home-automation",
+    "description": "Home automation and IoT apps"
+  }
+]
