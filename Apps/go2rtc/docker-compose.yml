@@ -1,0 +1,265 @@
+name: go2rtc
+services:
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /config
+    x-casaos:
+      envs:
+        - container: TZ
+          description:
+            en_us: "Timezone for log timestamps — e.g. Europe/Berlin, America/New_York"
+            de_de: "Zeitzone für Log-Zeitstempel — z.B. Europe/Berlin, America/New_York"
+      volumes:
+        - container: /config
+          description:
+            en_us: Configuration directory — go2rtc.yaml is created here after first start
+            de_de: Konfigurationsverzeichnis — go2rtc.yaml wird hier nach dem ersten Start erstellt
+    container_name: go2rtc
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+    - "386"
+  main: go2rtc
+  author: CasaOS Team
+  category: Smart Home
+  description:
+    en_us: |
+      go2rtc is a universal camera streaming application that bridges dozens of video protocols and formats with near-zero latency. It acts as a central hub for all your cameras — converting, proxying, and re-streaming to whatever format your clients need.
+
+      go2rtc is widely used as the streaming backend for Home Assistant's camera integration and Frigate NVR. It handles the heavy lifting of WebRTC, RTSP, HLS, and MSE streams so that Home Assistant can display live camera feeds in the browser and mobile app with minimal delay.
+
+      Key Features:
+      - Supports RTSP, WebRTC, HomeKit, ONVIF, FFmpeg, HLS, MJPEG, and many more
+      - Near-zero latency for supported protocols (WebRTC, RTSP)
+      - Hardware-accelerated transcoding for Intel, AMD, Nvidia, and Raspberry Pi
+      - Built-in web player — view streams directly in the browser
+      - Works as streaming backend for Home Assistant and Frigate NVR
+      - Multi-architecture: amd64, arm64, arm, 386
+      - Extremely lightweight — typically uses less than 50 MB RAM at idle
+    de_de: |
+      go2rtc ist eine universelle Kamera-Streaming-Anwendung, die dutzende Video-Protokolle und -Formate mit nahezu null Latenz verbindet. Es fungiert als zentraler Hub für alle Kameras — konvertiert, proxied und re-streamt in das jeweils benötigte Format.
+
+      go2rtc wird häufig als Streaming-Backend für die Home Assistant Kamera-Integration und Frigate NVR verwendet. Es übernimmt die komplexe Verarbeitung von WebRTC-, RTSP-, HLS- und MSE-Streams, damit Home Assistant Live-Kamera-Feeds im Browser und in der mobilen App mit minimaler Verzögerung anzeigen kann.
+
+      Hauptfunktionen:
+      - Unterstützt RTSP, WebRTC, HomeKit, ONVIF, FFmpeg, HLS, MJPEG und viele mehr
+      - Nahezu null Latenz für unterstützte Protokolle (WebRTC, RTSP)
+      - Hardware-beschleunigte Transcodierung für Intel, AMD, Nvidia und Raspberry Pi
+      - Integrierter Web-Player — Streams direkt im Browser anzeigen
+      - Funktioniert als Streaming-Backend für Home Assistant und Frigate NVR
+      - Extrem leichtgewichtig — typischerweise unter 50 MB RAM im Leerlauf
+  developer: AlexxIT
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/go2rtc.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/go2rtc/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/go2rtc/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/go2rtc/screenshot-3.png
+  tagline:
+    en_us: Universal camera streaming — WebRTC, RTSP, HomeKit, ONVIF, near-zero latency
+    de_de: Universelles Kamera-Streaming — WebRTC, RTSP, HomeKit, ONVIF, nahezu null Latenz
+    fr_fr: Streaming caméra universel — WebRTC, RTSP, HomeKit, ONVIF, latence quasi nulle
+    zh_cn: 通用摄像头流媒体 — WebRTC、RTSP、HomeKit、ONVIF，近零延迟
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/go2rtc.png
+  tips:
+    before_install:
+      en_us: |
+        ## Why host network mode?
+
+        go2rtc uses `network_mode: host` because:
+        - **WebRTC** requires UDP ports that are dynamically negotiated — impossible to pre-map in bridge mode
+        - **HomeKit** cameras use mDNS for discovery
+        - **UDP cameras** (e.g. some ONVIF devices) need direct host network access
+
+        go2rtc is accessible directly at **http://[ZimaOS-IP]:1984**
+
+        ---
+
+        ## Step 1 — Add your first camera
+
+        After installation, open **http://[ZimaOS-IP]:1984**
+
+        Go to **Config** and add your camera under `streams`. The web editor supports syntax highlighting and saves directly to `go2rtc.yaml`.
+
+        **RTSP camera:**
+        ```yaml
+        streams:
+          front-door:
+            - rtsp://admin:password@192.168.1.50/stream1
+        ```
+
+        **ONVIF camera (auto-detect stream URL):**
+        ```yaml
+        streams:
+          garage:
+            - onvif://admin:password@192.168.1.51
+        ```
+
+        **HomeKit camera:**
+        ```yaml
+        streams:
+          garden:
+            - homekit://[stream-ID]?...
+        ```
+
+        After saving, your stream appears under **Streams** and can be played directly in the browser.
+
+        ---
+
+        ## Step 2 — Connect to Home Assistant
+
+        go2rtc is the recommended streaming backend for Home Assistant cameras. Add it to your HA `configuration.yaml`:
+
+        ```yaml
+        go2rtc:
+          server: http://[ZimaOS-IP]:1984
+          streams:
+            front-door:
+              - rtsp://admin:password@192.168.1.50/stream1
+        ```
+
+        Or manage streams in go2rtc's own UI and just reference them in HA:
+
+        ```yaml
+        go2rtc:
+          server: http://[ZimaOS-IP]:1984
+        ```
+
+        Then add cameras in HA via **Settings → Devices → Add Integration → go2rtc**.
+
+        Live camera feeds in the HA dashboard and mobile app will use WebRTC for near-zero latency.
+
+        ---
+
+        ## Step 3 — Use as Frigate NVR backend
+
+        If you run Frigate NVR, point it to go2rtc for stream reuse (avoids opening multiple connections to the camera):
+
+        In `frigate.yml`:
+        ```yaml
+        go2rtc:
+          streams:
+            front-door:
+              - rtsp://admin:password@192.168.1.50/stream1
+
+        cameras:
+          front-door:
+            ffmpeg:
+              inputs:
+                - path: rtsp://127.0.0.1:8554/front-door
+                  roles:
+                    - detect
+                    - record
+        ```
+
+        ---
+
+        ## Hardware transcoding (optional)
+
+        For GPU-accelerated transcoding, change the image tag in the compose file:
+
+        | Hardware | Image tag |
+        |---|---|
+        | Intel iGPU / Raspberry Pi | `alexxit/go2rtc:latest` (default, already included) |
+        | Intel / AMD / Nvidia GPU | `alexxit/go2rtc:latest-hardware` |
+        | Rockchip RK35xx | `alexxit/go2rtc:latest-rockchip` |
+
+        The default `latest` tag already supports Intel iGPU and Raspberry Pi hardware transcoding.
+
+        ---
+
+        ## Key ports (host network)
+
+        | Port | Protocol | Purpose |
+        |---|---|---|
+        | 1984 | TCP | Web UI and REST API |
+        | 8554 | TCP | RTSP server |
+        | 8555 | TCP/UDP | WebRTC |
+
+      de_de: |
+        ## Warum Host-Netzwerkmodus?
+
+        go2rtc verwendet `network_mode: host` weil:
+        - **WebRTC** dynamisch ausgehandelte UDP-Ports benötigt — im Bridge-Modus nicht möglich
+        - **HomeKit**-Kameras mDNS für die Erkennung nutzen
+        - **UDP-Kameras** (z.B. manche ONVIF-Geräte) direkten Host-Netzwerk-Zugriff benötigen
+
+        go2rtc ist direkt erreichbar unter **http://[ZimaOS-IP]:1984**
+
+        ---
+
+        ## Schritt 1 — Erste Kamera hinzufügen
+
+        Nach der Installation öffnen: **http://[ZimaOS-IP]:1984**
+
+        Unter **Config** die Kamera unter `streams` eintragen. Der Web-Editor unterstützt Syntax-Highlighting und speichert direkt in `go2rtc.yaml`.
+
+        **RTSP-Kamera:**
+        ```yaml
+        streams:
+          haustuer:
+            - rtsp://admin:passwort@192.168.1.50/stream1
+        ```
+
+        **ONVIF-Kamera (Stream-URL auto-erkennen):**
+        ```yaml
+        streams:
+          garage:
+            - onvif://admin:passwort@192.168.1.51
+        ```
+
+        Nach dem Speichern erscheint der Stream unter **Streams** und kann direkt im Browser abgespielt werden.
+
+        ---
+
+        ## Schritt 2 — Home Assistant verbinden
+
+        go2rtc ist das empfohlene Streaming-Backend für Home Assistant Kameras. In die HA `configuration.yaml` eintragen:
+
+        ```yaml
+        go2rtc:
+          server: http://[ZimaOS-IP]:1984
+        ```
+
+        Dann Kameras in HA hinzufügen über **Einstellungen → Geräte → Integration hinzufügen → go2rtc**.
+
+        Live-Kamera-Feeds im HA-Dashboard und in der mobilen App nutzen WebRTC für nahezu null Latenz.
+
+        ---
+
+        ## Hardware-Transcodierung (optional)
+
+        Für GPU-beschleunigte Transcodierung den Image-Tag in der Compose-Datei ändern:
+
+        | Hardware | Image-Tag |
+        |---|---|
+        | Intel iGPU / Raspberry Pi | `alexxit/go2rtc:latest` (Standard, bereits enthalten) |
+        | Intel / AMD / Nvidia GPU | `alexxit/go2rtc:latest-hardware` |
+        | Rockchip RK35xx | `alexxit/go2rtc:latest-rockchip` |
+
+        ---
+
+        ## Wichtige Ports (Host-Netzwerk)
+
+        | Port | Protokoll | Zweck |
+        |---|---|---|
+        | 1984 | TCP | Web-UI und REST-API |
+        | 8554 | TCP | RTSP-Server |
+        | 8555 | TCP/UDP | WebRTC |
+  title:
+    en_us: go2rtc
+  index: /
+  port_map: "1984"

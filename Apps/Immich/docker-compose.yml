@@ -1,0 +1,367 @@
+name: immich
+
+services:
+  immich-server:
+    container_name: immich_server
+    image: ghcr.io/immich-app/immich-server:release
+    deploy:
+      resources:
+        reservations:
+          memory: 1024M
+    # Intel Quick Sync — hardware video transcoding (ZimaBoard 2: Intel N150 UHD Graphics)
+    devices:
+      - /dev/dri:/dev/dri
+    network_mode: bridge
+    ports:
+      - target: 2283
+        published: "2283"
+        protocol: tcp
+    restart: always
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/library
+        target: /data
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+    environment:
+      DB_USERNAME: immich
+      DB_PASSWORD: immich_db_password
+      DB_DATABASE_NAME: immich
+      TZ: Europe/Berlin
+    depends_on:
+      - redis
+      - database
+    healthcheck:
+      disable: false
+    x-casaos:
+      ports:
+        - container: "2283"
+          description:
+            en_us: Immich web interface and API
+            de_de: Immich Web-Oberfläche und API
+      volumes:
+        - container: /data
+          description:
+            en_us: Photo and video library — all uploaded media is stored here
+            de_de: Foto- und Videobibliothek — alle hochgeladenen Medien werden hier gespeichert
+      envs:
+        - container: DB_PASSWORD
+          description:
+            en_us: "Database password — change before first start, must match in all services"
+            de_de: "Datenbankpasswort — vor dem ersten Start ändern, muss in allen Services übereinstimmen"
+        - container: TZ
+          description:
+            en_us: "Timezone — e.g. Europe/Berlin, America/New_York"
+            de_de: "Zeitzone — z.B. Europe/Berlin, America/New_York"
+
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    # OpenVINO image tag — GPU-accelerated ML inference for Intel UHD (ZimaBoard 2: Intel N150)
+    image: ghcr.io/immich-app/immich-machine-learning:release-openvino
+    deploy:
+      resources:
+        reservations:
+          memory: 1024M
+    # OpenVINO device access for Intel iGPU
+    device_cgroup_rules:
+      - 'c 189:* rmw'
+    devices:
+      - /dev/dri:/dev/dri
+    restart: always
+    volumes:
+      - type: volume
+        source: immich_model_cache
+        target: /cache
+      - type: bind
+        source: /dev/bus/usb
+        target: /dev/bus/usb
+    environment:
+      DB_USERNAME: immich
+      DB_PASSWORD: immich_db_password
+      DB_DATABASE_NAME: immich
+      TZ: Europe/Berlin
+    healthcheck:
+      disable: false
+    x-casaos:
+      volumes:
+        - container: /cache
+          description:
+            en_us: ML model cache — CLIP and face recognition models are downloaded here (~2 GB)
+            de_de: ML-Modell-Cache — CLIP- und Gesichtserkennung-Modelle werden hier gespeichert (~2 GB)
+
+  redis:
+    container_name: immich_redis
+    image: docker.io/valkey/valkey:9-alpine
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+    restart: always
+    healthcheck:
+      test: redis-cli ping || exit 1
+
+  database:
+    container_name: immich_postgres
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    deploy:
+      resources:
+        reservations:
+          memory: 256M
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: immich
+      POSTGRES_PASSWORD: immich_db_password
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      # Uncomment if your database volume is on a spinning HDD (not SSD):
+      # DB_STORAGE_TYPE: 'HDD'
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/postgres
+        target: /var/lib/postgresql/data
+    healthcheck:
+      disable: false
+    x-casaos:
+      volumes:
+        - container: /var/lib/postgresql/data
+          description:
+            en_us: PostgreSQL database files — back this up regularly alongside your photo library
+            de_de: PostgreSQL-Datenbankdateien — regelmäßig zusammen mit der Fotobibliothek sichern
+
+volumes:
+  immich_model_cache:
+    name: immich_model_cache
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: immich-server
+  store_app_id: immich
+  author: CasaOS Team
+  category: Photography
+  description:
+    en_us: |
+      Immich is a high-performance, self-hosted photo and video backup solution. It looks and feels like Google Photos — with automatic mobile backup, shared albums, facial recognition, and AI-powered smart search — but runs entirely on your own hardware with no subscription or cloud dependency.
+
+      This configuration is optimized for the ZimaBoard 2 (Intel N150):
+      - **Video transcoding** uses Intel Quick Sync via the integrated UHD Graphics — significantly faster than CPU-only and uses less power
+      - **Machine learning inference** (face recognition, CLIP smart search) uses OpenVINO on the Intel iGPU — much faster initial indexing of large photo libraries
+
+      Key Features:
+      - Automatic photo and video backup from iOS and Android
+      - AI-powered smart search (describe a scene in plain language)
+      - Facial recognition — automatically groups photos by person
+      - Shared albums with other users
+      - Map view — browse photos by location
+      - Memory lane — "On this day" view
+      - Duplicate detection
+      - RAW file support
+      - 4K video support with hardware-accelerated transcoding
+    de_de: |
+      Immich ist eine hochperformante, selbst gehostete Foto- und Video-Backup-Lösung. Sie sieht aus und funktioniert wie Google Photos — mit automatischem mobilen Backup, geteilten Alben, Gesichtserkennung und KI-gestützter Suche — läuft aber vollständig auf eigener Hardware ohne Abo oder Cloud-Abhängigkeit.
+
+      Diese Konfiguration ist für das ZimaBoard 2 (Intel N150) optimiert:
+      - **Video-Transcodierung** nutzt Intel Quick Sync über die integrierte UHD-Grafik — deutlich schneller als CPU-only und energieeffizienter
+      - **Machine-Learning-Inferenz** (Gesichtserkennung, CLIP Smart Search) nutzt OpenVINO auf dem Intel iGPU — viel schnellere Erstindizierung großer Fotobibliotheken
+
+      Hauptfunktionen:
+      - Automatisches Foto- und Video-Backup von iOS und Android
+      - KI-gestützte Suche (Szene in natürlicher Sprache beschreiben)
+      - Gesichtserkennung — Fotos automatisch nach Person gruppieren
+      - Geteilte Alben mit anderen Nutzern
+      - Kartenansicht — Fotos nach Standort durchsuchen
+      - Erinnerungen — "An diesem Tag"-Ansicht
+      - Duplikaterkennung
+      - RAW-Datei-Unterstützung
+      - 4K-Video mit Hardware-beschleunigter Transcodierung
+    fr_fr: |
+      Immich est une solution de sauvegarde de photos et vidéos auto-hébergée, ressemblant à Google Photos, avec reconnaissance faciale et recherche IA — sans abonnement ni cloud.
+    zh_cn: |
+      Immich 是高性能的自托管照片和视频备份方案，外观和功能类似 Google Photos，支持自动备份、面部识别和 AI 智能搜索，完全运行在本地硬件上。
+  developer: Immich
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/immich.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Immich/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Immich/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Immich/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Immich/screenshot-4.png
+  tagline:
+    en_us: Self-hosted Google Photos alternative — AI search, face recognition, auto backup
+    de_de: Selbst gehostete Google Photos-Alternative — KI-Suche, Gesichtserkennung, Auto-Backup
+    fr_fr: Alternative Google Photos auto-hébergée — recherche IA, reconnaissance faciale
+    zh_cn: 自托管 Google Photos 替代方案 — AI 搜索、面部识别、自动备份
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/immich.png
+  tips:
+    before_install:
+      en_us: |
+        ## Hardware acceleration (ZimaBoard 2 — Intel N150)
+
+        This compose is pre-configured with two Intel hardware acceleration features:
+
+        **Quick Sync** (`immich-server`) — hardware video transcoding via `/dev/dri`
+        Immich converts uploaded videos to web-compatible formats. On the Intel N150, Quick Sync does this 5–10× faster than CPU-only while using significantly less power.
+
+        **OpenVINO** (`immich-machine-learning`) — GPU-accelerated ML inference via Intel iGPU
+        Immich runs CLIP (smart search) and facial recognition models on every uploaded photo. OpenVINO accelerates this on the Intel N150's integrated GPU, dramatically reducing the time to index a large photo library.
+
+        To activate Quick Sync after installation, go to:
+        **Administration → Video Transcoding Settings → Hardware Acceleration → Quick Sync**
+
+        To activate OpenVINO after installation, go to:
+        **Administration → Machine Learning Settings → URL** (already connected) → the openvino image handles the rest automatically.
+
+        > If you are **not** using a ZimaBoard 2 or Intel CPU, change the `immich-machine-learning` image tag from `release-openvino` back to `release` and remove the `devices` and `device_cgroup_rules` entries from that service.
+
+        ---
+
+        ## Step 1 — Set your database password
+
+        Before installing, change `DB_PASSWORD` from the default `immich_db_password` to something secure (letters and numbers only, no special characters).
+
+        **Important:** The password appears in three places in the compose file — `immich-server`, `immich-machine-learning`, and `database`. All three must match.
+
+        ---
+
+        ## Step 2 — First start
+
+        Installation takes 2–5 minutes — Immich downloads ML models (~2 GB) on first start.
+
+        Open **http://[ZimaOS-IP]:2283** and create your admin account.
+
+        ---
+
+        ## Step 3 — Install the mobile app
+
+        Download the **Immich** app for [iOS](https://apps.apple.com/app/immich/id1613945652) or [Android](https://play.google.com/store/apps/details?id=app.alextran.immich).
+
+        In the app settings:
+        - **Server URL:** `http://[ZimaOS-IP]:2283`
+        - Log in with your admin account
+        - Enable automatic backup in the app settings
+
+        ---
+
+        ## Step 4 — Storage location
+
+        Your photos and videos are stored at:
+        ```
+        /DATA/AppData/immich/library
+        ```
+
+        The PostgreSQL database is at:
+        ```
+        /DATA/AppData/immich/postgres
+        ```
+
+        **Back up both directories** to protect your library. The database contains all metadata, albums, faces, and search index — without it, the photo files alone are not useful.
+
+        ---
+
+        ## HDD vs SSD
+
+        If your ZimaBoard 2's data volume is on a **spinning hard drive** (not SSD), edit the compose and uncomment this line in the `database` service:
+
+        ```yaml
+        # DB_STORAGE_TYPE: 'HDD'
+        ```
+
+        This tunes PostgreSQL for sequential I/O patterns, improving performance on HDDs.
+
+        ---
+
+        ## Upgrading Immich
+
+        Immich releases updates frequently. To upgrade:
+        ```bash
+        docker compose -p immich pull
+        docker compose -p immich up -d
+        ```
+
+        **Never skip major versions** — always upgrade step by step. Check the [release notes](https://github.com/immich-app/immich/releases) for breaking changes before upgrading.
+
+      de_de: |
+        ## Hardware-Beschleunigung (ZimaBoard 2 — Intel N150)
+
+        Dieses Compose ist mit zwei Intel-Hardware-Beschleunigungsfeatures vorkonfiguriert:
+
+        **Quick Sync** (`immich-server`) — Hardware-Video-Transcodierung via `/dev/dri`
+        Immich konvertiert hochgeladene Videos in webkompatible Formate. Auf dem Intel N150 ist Quick Sync 5–10× schneller als CPU-only bei deutlich geringerem Energieverbrauch.
+
+        **OpenVINO** (`immich-machine-learning`) — GPU-beschleunigte ML-Inferenz via Intel iGPU
+        Immich führt CLIP (Smart Search) und Gesichtserkennung auf jedem hochgeladenen Foto aus. OpenVINO beschleunigt dies auf der integrierten GPU des Intel N150 erheblich.
+
+        Quick Sync nach der Installation aktivieren:
+        **Administration → Video-Transcodierungseinstellungen → Hardware-Beschleunigung → Quick Sync**
+
+        > Wenn **kein** ZimaBoard 2 oder Intel-CPU verwendet wird, den Image-Tag von `immich-machine-learning` von `release-openvino` auf `release` zurückändern und `devices` sowie `device_cgroup_rules` entfernen.
+
+        ---
+
+        ## Schritt 1 — Datenbankpasswort setzen
+
+        Vor der Installation `DB_PASSWORD` von `immich_db_password` auf etwas Sicheres ändern (nur Buchstaben und Ziffern, keine Sonderzeichen).
+
+        **Wichtig:** Das Passwort erscheint an drei Stellen in der Compose-Datei — `immich-server`, `immich-machine-learning` und `database`. Alle drei müssen übereinstimmen.
+
+        ---
+
+        ## Schritt 2 — Erster Start
+
+        Die Installation dauert 2–5 Minuten — Immich lädt beim ersten Start ML-Modelle herunter (~2 GB).
+
+        **http://[ZimaOS-IP]:2283** öffnen und Admin-Konto erstellen.
+
+        ---
+
+        ## Schritt 3 — Mobile App installieren
+
+        Die **Immich**-App für [iOS](https://apps.apple.com/app/immich/id1613945652) oder [Android](https://play.google.com/store/apps/details?id=app.alextran.immich) herunterladen.
+
+        In den App-Einstellungen:
+        - **Server-URL:** `http://[ZimaOS-IP]:2283`
+        - Mit dem Admin-Konto einloggen
+        - Automatisches Backup in den App-Einstellungen aktivieren
+
+        ---
+
+        ## Speicherorte
+
+        Fotos und Videos:
+        ```
+        /DATA/AppData/immich/library
+        ```
+        PostgreSQL-Datenbank:
+        ```
+        /DATA/AppData/immich/postgres
+        ```
+
+        **Beide Verzeichnisse regelmäßig sichern.** Die Datenbank enthält alle Metadaten, Alben, Gesichter und den Suchindex.
+
+        ---
+
+        ## HDD vs SSD
+
+        Wenn das Daten-Volume des ZimaBoard 2 auf einer **Festplatte** (kein SSD) liegt, in der Compose-Datei unter `database` auskommentieren:
+
+        ```yaml
+        # DB_STORAGE_TYPE: 'HDD'
+        ```
+
+        ---
+
+        ## Immich aktualisieren
+
+        ```bash
+        docker compose -p immich pull
+        docker compose -p immich up -d
+        ```
+
+        **Nie Major-Versionen überspringen** — immer schrittweise upgraden. [Release Notes](https://github.com/immich-app/immich/releases) vor dem Upgrade prüfen.
+  title:
+    en_us: Immich
+  index: /
+  port_map: "2283"

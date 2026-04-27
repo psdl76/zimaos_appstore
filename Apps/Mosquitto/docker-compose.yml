@@ -1,0 +1,283 @@
+name: mosquitto
+services:
+  mosquitto-init:
+    image: eclipse-mosquitto:latest
+    restart: "no"
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /mosquitto/config
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -f /mosquitto/config/mosquitto.conf ]; then
+          echo "Config already exists, skipping init."
+          exit 0
+        fi
+        cat > /mosquitto/config/mosquitto.conf << 'EOF'
+        # MQTT listener (standard port)
+        listener 1883
+        allow_anonymous true
+
+        # MQTT over WebSockets (for web clients and some HA integrations)
+        listener 9001
+        protocol websockets
+        allow_anonymous true
+
+        # Persistence — survives restarts
+        persistence true
+        persistence_location /mosquitto/data/
+
+        # Logging
+        log_dest file /mosquitto/log/mosquitto.log
+        log_type error
+        log_type warning
+        log_type notice
+        log_type information
+        EOF
+        echo "Default config written."
+    container_name: mosquitto-init
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    deploy:
+      resources:
+        reservations:
+          memory: 32M
+    depends_on:
+      mosquitto-init:
+        condition: service_completed_successfully
+    network_mode: bridge
+    ports:
+      - target: 1883
+        published: "1883"
+        protocol: tcp
+      - target: 9001
+        published: "9001"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /mosquitto/config
+      - type: bind
+        source: /DATA/AppData/$AppID/data
+        target: /mosquitto/data
+      - type: bind
+        source: /DATA/AppData/$AppID/log
+        target: /mosquitto/log
+    x-casaos:
+      ports:
+        - container: "1883"
+          description:
+            en_us: MQTT — standard broker port for Home Assistant and all MQTT clients
+            de_de: MQTT — Standard-Broker-Port für Home Assistant und alle MQTT-Clients
+        - container: "9001"
+          description:
+            en_us: MQTT over WebSockets — for web-based clients and browser integrations
+            de_de: MQTT über WebSockets — für webbasierte Clients und Browser-Integrationen
+      volumes:
+        - container: /mosquitto/config
+          description:
+            en_us: Mosquitto configuration directory — edit mosquitto.conf to customize
+            de_de: Konfigurationsverzeichnis — mosquitto.conf zum Anpassen bearbeiten
+        - container: /mosquitto/data
+          description:
+            en_us: Persistent message store — retained messages survive restarts
+            de_de: Persistenter Nachrichtenspeicher — Retained-Messages überleben Neustarts
+        - container: /mosquitto/log
+          description:
+            en_us: Broker log files
+            de_de: Broker-Protokolldateien
+    container_name: mosquitto
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+    - "386"
+  main: mosquitto
+  author: CasaOS Team
+  category: Smart Home
+  description:
+    en_us: |
+      Eclipse Mosquitto is a lightweight, open-source MQTT message broker. MQTT is the standard protocol for IoT and smart home devices — it connects sensors, actuators, and automation systems through a publish/subscribe messaging pattern.
+
+      Mosquitto is the most commonly used MQTT broker for Home Assistant. Once running, it enables all MQTT-based integrations: Zigbee2MQTT, Tasmota, ESPHome, Shelly devices, and many more.
+
+      Key Features:
+      - Lightweight — typically uses less than 20 MB of RAM
+      - MQTT 3.1, 3.1.1, and 5.0 support
+      - WebSocket support for browser-based clients
+      - TLS/SSL support for encrypted connections
+      - Username/password authentication and ACL (access control lists)
+      - Persistent message store — retained messages survive restarts
+      - Bridges — connect multiple brokers together
+    de_de: |
+      Eclipse Mosquitto ist ein leichtgewichtiger Open-Source-MQTT-Nachrichtenbroker. MQTT ist das Standardprotokoll für IoT- und Smart-Home-Geräte — es verbindet Sensoren, Aktoren und Automatisierungssysteme über ein Publish/Subscribe-Muster.
+
+      Mosquitto ist der am häufigsten verwendete MQTT-Broker für Home Assistant. Nach dem Start ermöglicht er alle MQTT-basierten Integrationen: Zigbee2MQTT, Tasmota, ESPHome, Shelly-Geräte und viele mehr.
+
+      Hauptfunktionen:
+      - Leichtgewichtig — typischerweise unter 20 MB RAM
+      - MQTT 3.1, 3.1.1 und 5.0 Unterstützung
+      - WebSocket-Unterstützung für browserbasierte Clients
+      - TLS/SSL für verschlüsselte Verbindungen
+      - Benutzername/Passwort-Authentifizierung und ACLs
+      - Persistenter Nachrichtenspeicher
+      - Bridges — mehrere Broker verbinden
+  developer: Eclipse Foundation
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/mosquitto.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Mosquitto/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Mosquitto/screenshot-2.png
+  tagline:
+    en_us: Lightweight MQTT broker — the backbone of your smart home
+    de_de: Leichtgewichtiger MQTT-Broker — das Rückgrat deines Smart Home
+    fr_fr: Broker MQTT léger — l'épine dorsale de votre maison intelligente
+    zh_cn: 轻量级 MQTT 消息代理 — 智能家居的核心
+    ru_ru: Лёгкий MQTT-брокер — основа вашего умного дома
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/mosquitto.png
+  tips:
+    before_install:
+      en_us: |
+        ## What Mosquitto does
+
+        Mosquitto is an MQTT broker — a central hub that receives messages from IoT devices and forwards them to subscribers. Home Assistant connects to it as a client to receive sensor data and send commands.
+
+        **Typical flow:**
+        ```
+        Zigbee2MQTT / ESPHome / Tasmota → Mosquitto (port 1883) → Home Assistant
+        ```
+
+        ---
+
+        ## Step 1 — Install Mosquitto
+
+        Install the app. The first start automatically creates a working default config at:
+        `/DATA/AppData/mosquitto/config/mosquitto.conf`
+
+        Default settings:
+        - Port 1883 — anonymous access allowed
+        - Port 9001 — MQTT over WebSockets
+        - Persistence enabled
+
+        ---
+
+        ## Step 2 — Connect Home Assistant
+
+        In Home Assistant, go to **Settings → Devices & Services → Add Integration** and search for **MQTT**.
+
+        Enter:
+        - **Broker:** `[ZimaOS-IP]`
+        - **Port:** `1883`
+        - **Username / Password:** leave empty (anonymous mode)
+
+        Click **Submit** — Home Assistant will connect immediately.
+
+        ---
+
+        ## Step 3 — Add authentication (recommended)
+
+        The default config allows anonymous access. For a more secure setup, add a password:
+
+        1. SSH into ZimaOS and run:
+           ```bash
+           docker exec -it mosquitto mosquitto_passwd -c /mosquitto/config/passwd myusername
+           ```
+           Enter a password when prompted.
+
+        2. Edit `/DATA/AppData/mosquitto/config/mosquitto.conf` and replace `allow_anonymous true` with:
+           ```
+           allow_anonymous false
+           password_file /mosquitto/config/passwd
+           ```
+
+        3. Restart the container, then update the credentials in Home Assistant's MQTT integration.
+
+        ---
+
+        ## Useful MQTT test commands
+
+        Test from any machine with `mosquitto_pub` / `mosquitto_sub` installed, or use MQTT Explorer (a free GUI client):
+
+        ```bash
+        # Subscribe to all topics
+        mosquitto_sub -h [ZimaOS-IP] -t '#' -v
+
+        # Publish a test message
+        mosquitto_pub -h [ZimaOS-IP] -t 'test/hello' -m 'world'
+        ```
+
+      de_de: |
+        ## Was Mosquitto macht
+
+        Mosquitto ist ein MQTT-Broker — ein zentraler Hub, der Nachrichten von IoT-Geräten empfängt und an Subscriber weiterleitet. Home Assistant verbindet sich als Client, um Sensordaten zu empfangen und Befehle zu senden.
+
+        **Typischer Datenfluss:**
+        ```
+        Zigbee2MQTT / ESPHome / Tasmota → Mosquitto (Port 1883) → Home Assistant
+        ```
+
+        ---
+
+        ## Schritt 1 — Mosquitto installieren
+
+        App installieren. Beim ersten Start wird automatisch eine funktionsfähige Standard-Konfiguration erstellt:
+        `/DATA/AppData/mosquitto/config/mosquitto.conf`
+
+        Standardeinstellungen:
+        - Port 1883 — anonymer Zugriff erlaubt
+        - Port 9001 — MQTT über WebSockets
+        - Persistenz aktiviert
+
+        ---
+
+        ## Schritt 2 — Home Assistant verbinden
+
+        In Home Assistant unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **MQTT** suchen.
+
+        Eingeben:
+        - **Broker:** `[ZimaOS-IP]`
+        - **Port:** `1883`
+        - **Benutzername / Passwort:** leer lassen (anonymer Modus)
+
+        **Absenden** klicken — Home Assistant verbindet sich sofort.
+
+        ---
+
+        ## Schritt 3 — Authentifizierung einrichten (empfohlen)
+
+        Die Standard-Konfiguration erlaubt anonymen Zugriff. Für mehr Sicherheit ein Passwort hinzufügen:
+
+        1. Per SSH in ZimaOS einloggen und ausführen:
+           ```bash
+           docker exec -it mosquitto mosquitto_passwd -c /mosquitto/config/passwd meinbenutzername
+           ```
+           Passwort eingeben wenn aufgefordert.
+
+        2. `/DATA/AppData/mosquitto/config/mosquitto.conf` bearbeiten und `allow_anonymous true` ersetzen durch:
+           ```
+           allow_anonymous false
+           password_file /mosquitto/config/passwd
+           ```
+
+        3. Container neu starten, dann Zugangsdaten in der MQTT-Integration von Home Assistant aktualisieren.
+
+        ---
+
+        ## Nützliche MQTT-Testbefehle
+
+        Mit `mosquitto_pub` / `mosquitto_sub` oder dem kostenlosen GUI-Client MQTT Explorer testen:
+
+        ```bash
+        # Alle Topics abonnieren
+        mosquitto_sub -h [ZimaOS-IP] -t '#' -v
+
+        # Testnachricht senden
+        mosquitto_pub -h [ZimaOS-IP] -t 'test/hallo' -m 'welt'
+        ```
+  title:
+    en_us: Mosquitto MQTT Broker
+  index: /
+  port_map: "1883"

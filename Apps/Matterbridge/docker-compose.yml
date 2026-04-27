@@ -1,0 +1,220 @@
+name: matterbridge
+services:
+  matterbridge:
+    image: luligu/matterbridge:latest
+    deploy:
+      resources:
+        reservations:
+          memory: 256M
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/Matterbridge
+        target: /root/Matterbridge
+      - type: bind
+        source: /DATA/AppData/$AppID/.matterbridge
+        target: /root/.matterbridge
+      - type: bind
+        source: /DATA/AppData/$AppID/.mattercert
+        target: /root/.mattercert
+    x-casaos:
+      volumes:
+        - container: /root/Matterbridge
+          description:
+            en_us: Plugin directory — installed Matterbridge plugins live here
+            de_de: Plugin-Verzeichnis — installierte Matterbridge-Plugins
+        - container: /root/.matterbridge
+          description:
+            en_us: Configuration and state — device pairings, settings, Matter fabric data
+            de_de: Konfiguration und Zustand — Gerätekopplungen, Einstellungen, Matter-Fabric-Daten
+        - container: /root/.mattercert
+          description:
+            en_us: Matter certificates — do not delete, required for paired controllers to reconnect
+            de_de: Matter-Zertifikate — nicht löschen, erforderlich für die Wiederverbindung gekoppelter Controller
+    container_name: matterbridge
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: matterbridge
+  author: CasaOS Team
+  category: Smart Home
+  description:
+    en_us: |
+      Matterbridge is a Matter bridge that connects your existing smart home devices to any Matter controller — Apple Home, Google Home, Amazon Alexa, SmartThings, and Home Assistant — without replacing your current setup.
+
+      Using plugins, Matterbridge exposes devices from platforms like Zigbee2MQTT, Home Assistant, Shelly, and many others as native Matter devices. This means your Zigbee sensors, Shelly plugs, or any HA entity can appear directly in Apple Home or Google Home without any cloud service.
+
+      Key Features:
+      - Bridges non-Matter devices to Matter — works with Apple Home, Google Home, Alexa, SmartThings, HA
+      - Plugin system — extend with community plugins for Zigbee2MQTT, Shelly, Home Assistant, and more
+      - Fully local — no cloud, no subscription
+      - Web frontend for plugin management and Matter pairing
+      - Supports multiple simultaneous Matter controllers (fabrics)
+      - Automatic OTA plugin updates
+    de_de: |
+      Matterbridge ist eine Matter-Bridge, die bestehende Smart-Home-Geräte mit jedem Matter-Controller verbindet — Apple Home, Google Home, Amazon Alexa, SmartThings und Home Assistant — ohne das aktuelle Setup zu ersetzen.
+
+      Über Plugins stellt Matterbridge Geräte aus Plattformen wie Zigbee2MQTT, Home Assistant, Shelly und vielen anderen als native Matter-Geräte bereit. Damit können Zigbee-Sensoren, Shelly-Steckdosen oder beliebige HA-Entitäten direkt in Apple Home oder Google Home erscheinen — ohne Cloud-Dienst.
+
+      Hauptfunktionen:
+      - Verbindet Nicht-Matter-Geräte mit Matter — Apple Home, Google Home, Alexa, SmartThings, HA
+      - Plugin-System — erweiterbar mit Community-Plugins für Zigbee2MQTT, Shelly, Home Assistant und mehr
+      - Vollständig lokal — kein Cloud, kein Abo
+      - Web-Frontend für Plugin-Verwaltung und Matter-Kopplung
+      - Unterstützt mehrere gleichzeitige Matter-Controller (Fabrics)
+      - Automatische OTA-Plugin-Updates
+    fr_fr: |
+      Matterbridge est un pont Matter qui connecte vos appareils domotiques existants à n'importe quel contrôleur Matter — sans remplacer votre installation actuelle.
+    zh_cn: |
+      Matterbridge 是一个 Matter 网桥，可将现有智能家居设备连接到任何 Matter 控制器——Apple Home、Google Home、Amazon Alexa 等，无需替换现有设置。
+  developer: Luligu
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/matterbridge.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Matterbridge/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Matterbridge/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Matterbridge/screenshot-3.png
+  tagline:
+    en_us: Matter bridge — connect any smart home device to Apple Home, Google Home & Alexa
+    de_de: Matter-Bridge — beliebige Smart-Home-Geräte mit Apple Home, Google Home & Alexa verbinden
+    fr_fr: Pont Matter — connectez n'importe quel appareil à Apple Home, Google Home et Alexa
+    zh_cn: Matter 网桥 — 将任何智能家居设备连接到 Apple Home、Google Home 和 Alexa
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/matterbridge.png
+  tips:
+    before_install:
+      en_us: |
+        ## Why host network mode?
+
+        Matter uses mDNS for device discovery and UDP port 5540 for commissioning. Both require direct access to the host network — `network_mode: host` is mandatory. Matterbridge is accessible at **http://[ZimaOS-IP]:8283** directly.
+
+        ---
+
+        ## Step 1 — Install and open the frontend
+
+        After installation, open **http://[ZimaOS-IP]:8283**
+
+        You'll see the Matterbridge dashboard. No initial configuration is needed — everything is managed through the web UI.
+
+        ---
+
+        ## Step 2 — Install plugins
+
+        Plugins connect Matterbridge to your existing smart home platforms. In the frontend, go to **Install plugin** and search for the plugin you need:
+
+        | Plugin | What it does |
+        |---|---|
+        | `matterbridge-zigbee2mqtt` | Exposes Zigbee2MQTT devices as Matter devices |
+        | `matterbridge-shelly` | Exposes Shelly devices as Matter devices |
+        | `matterbridge-hass` | Exposes Home Assistant entities as Matter devices |
+        | `matterbridge-somfy-tahoma` | Somfy TaHoma bridge |
+
+        Browse all plugins at [npmjs.com](https://www.npmjs.com/search?q=matterbridge-)
+
+        After installing a plugin, configure it in the **Plugin settings** tab (e.g. enter your Zigbee2MQTT MQTT broker address or Home Assistant URL + token).
+
+        ---
+
+        ## Step 3 — Pair with a Matter controller
+
+        Once plugins are configured and devices are visible in the frontend:
+
+        1. In the Matterbridge frontend, click **"Add to Apple Home"** (or Google Home, Alexa, etc.)
+        2. A QR code and pairing code appear
+        3. Open your controller app:
+           - **Apple Home:** tap + → Add Accessory → scan the QR code
+           - **Google Home:** tap + → Set up device → Matter → scan the QR code
+           - **Amazon Alexa:** tap + → Add Device → Matter → scan the QR code
+           - **Home Assistant:** Settings → Devices → Add Integration → Matter (Server) → scan
+
+        Your Zigbee, Shelly, or HA devices will appear as native Matter accessories.
+
+        ---
+
+        ## Important: Matter certificates
+
+        The `/root/.mattercert` volume contains your Matter fabric credentials. **Do not delete this directory** — if lost, all paired controllers must re-pair from scratch.
+
+        Paired controller data is stored in `/root/.matterbridge`. Back up both directories regularly.
+
+        ---
+
+        ## Matterbridge + Zigbee2MQTT on ZimaOS
+
+        If you run both Zigbee2MQTT and Matterbridge on ZimaOS, configure the `matterbridge-zigbee2mqtt` plugin to connect to your Mosquitto broker:
+
+        ```
+        MQTT broker: mqtt://[ZimaOS-IP]:1883
+        ```
+
+        Your Zigbee devices then appear natively in Apple Home / Google Home — no HA required as intermediary.
+
+      de_de: |
+        ## Warum Host-Netzwerkmodus?
+
+        Matter nutzt mDNS für die Geräteerkennung und UDP-Port 5540 für die Kopplung. Beides erfordert direkten Zugriff auf das Host-Netzwerk — `network_mode: host` ist zwingend erforderlich. Matterbridge ist direkt unter **http://[ZimaOS-IP]:8283** erreichbar.
+
+        ---
+
+        ## Schritt 1 — Installieren und Frontend öffnen
+
+        Nach der Installation öffnen: **http://[ZimaOS-IP]:8283**
+
+        Das Matterbridge-Dashboard wird angezeigt. Keine initiale Konfiguration nötig — alles wird über die Web-UI verwaltet.
+
+        ---
+
+        ## Schritt 2 — Plugins installieren
+
+        Plugins verbinden Matterbridge mit bestehenden Smart-Home-Plattformen. Im Frontend unter **Plugin installieren** nach dem benötigten Plugin suchen:
+
+        | Plugin | Funktion |
+        |---|---|
+        | `matterbridge-zigbee2mqtt` | Stellt Zigbee2MQTT-Geräte als Matter-Geräte bereit |
+        | `matterbridge-shelly` | Stellt Shelly-Geräte als Matter-Geräte bereit |
+        | `matterbridge-hass` | Stellt Home Assistant-Entitäten als Matter-Geräte bereit |
+
+        Alle Plugins auf [npmjs.com](https://www.npmjs.com/search?q=matterbridge-) durchsuchen.
+
+        Nach der Plugin-Installation unter **Plugin-Einstellungen** konfigurieren (z.B. Zigbee2MQTT MQTT-Broker-Adresse oder Home Assistant URL + Token eingeben).
+
+        ---
+
+        ## Schritt 3 — Mit Matter-Controller koppeln
+
+        Sobald Plugins konfiguriert sind und Geräte im Frontend sichtbar sind:
+
+        1. Im Matterbridge-Frontend auf **"Zu Apple Home hinzufügen"** klicken (oder Google Home, Alexa usw.)
+        2. QR-Code und Kopplungscode werden angezeigt
+        3. Controller-App öffnen:
+           - **Apple Home:** + → Zubehör hinzufügen → QR-Code scannen
+           - **Google Home:** + → Gerät einrichten → Matter → QR-Code scannen
+           - **Amazon Alexa:** + → Gerät hinzufügen → Matter → QR-Code scannen
+           - **Home Assistant:** Einstellungen → Geräte → Integration hinzufügen → Matter (Server) → scannen
+
+        Zigbee-, Shelly- oder HA-Geräte erscheinen als native Matter-Zubehör.
+
+        ---
+
+        ## Wichtig: Matter-Zertifikate
+
+        Das Verzeichnis `/root/.mattercert` enthält die Matter-Fabric-Zugangsdaten. **Dieses Verzeichnis nicht löschen** — bei Verlust müssen alle gekoppelten Controller neu koppeln.
+
+        Beide Verzeichnisse (`/root/.mattercert` und `/root/.matterbridge`) regelmäßig sichern.
+
+        ---
+
+        ## Matterbridge + Zigbee2MQTT auf ZimaOS
+
+        Wenn Zigbee2MQTT und Matterbridge beide auf ZimaOS laufen, das `matterbridge-zigbee2mqtt`-Plugin auf den Mosquitto-Broker konfigurieren:
+
+        ```
+        MQTT-Broker: mqtt://[ZimaOS-IP]:1883
+        ```
+
+        Zigbee-Geräte erscheinen dann nativ in Apple Home / Google Home — ohne HA als Zwischensystem.
+  title:
+    en_us: Matterbridge
+  index: /
+  port_map: "8283"

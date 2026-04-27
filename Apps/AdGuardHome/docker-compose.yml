@@ -1,0 +1,186 @@
+name: adguard-home
+services:
+  adguard-home:
+    image: adguard/adguardhome:latest
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+    network_mode: bridge
+    ports:
+      - target: 3000
+        published: "3001"
+        protocol: tcp
+      - target: 80
+        published: "8088"
+        protocol: tcp
+      - target: 443
+        published: "8443"
+        protocol: tcp
+      - target: 53
+        published: "53"
+        protocol: tcp
+      - target: 53
+        published: "53"
+        protocol: udp
+      - target: 853
+        published: "853"
+        protocol: tcp
+      - target: 784
+        published: "784"
+        protocol: udp
+      - target: 8853
+        published: "8853"
+        protocol: udp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/work
+        target: /opt/adguardhome/work
+      - type: bind
+        source: /DATA/AppData/$AppID/conf
+        target: /opt/adguardhome/conf
+    x-casaos:
+      ports:
+        - container: "3000"
+          description:
+            en_us: Initial setup WebUI — only used once during first-time configuration
+            de_de: Ersteinrichtungs-WebUI — wird nur einmal bei der Erstkonfiguration verwendet
+        - container: "80"
+          description:
+            en_us: WebUI HTTP — main interface after initial setup
+            de_de: WebUI HTTP — Hauptoberfläche nach der Ersteinrichtung
+        - container: "443"
+          description:
+            en_us: WebUI HTTPS — secure interface after initial setup
+            de_de: WebUI HTTPS — sichere Oberfläche nach der Ersteinrichtung
+        - container: "53"
+          description:
+            en_us: DNS — standard port for DNS queries from your devices and router
+            de_de: DNS — Standardport für DNS-Anfragen von Geräten und Router
+        - container: "853"
+          description:
+            en_us: DNS-over-TLS (DoT) — encrypted DNS for supported clients
+            de_de: DNS-over-TLS (DoT) — verschlüsseltes DNS für unterstützte Clients
+        - container: "784"
+          description:
+            en_us: DNS-over-QUIC (DoQ) — modern encrypted DNS protocol
+            de_de: DNS-over-QUIC (DoQ) — modernes verschlüsseltes DNS-Protokoll
+        - container: "8853"
+          description:
+            en_us: DNS-over-QUIC alternate port
+            de_de: DNS-over-QUIC alternativer Port
+      volumes:
+        - container: /opt/adguardhome/work
+          description:
+            en_us: AdGuard Home working directory (query logs, statistics)
+            de_de: AdGuard Home Arbeitsverzeichnis (Abfrage-Logs, Statistiken)
+        - container: /opt/adguardhome/conf
+          description:
+            en_us: AdGuard Home configuration directory (AdGuardHome.yaml)
+            de_de: AdGuard Home Konfigurationsverzeichnis (AdGuardHome.yaml)
+    container_name: adguard-home
+x-casaos:
+  architectures:
+    - "386"
+    - amd64
+    - arm
+    - arm64
+    - ppc64le
+  main: adguard-home
+  author: CasaOS Team
+  category: Network
+  description:
+    en_us: |
+      AdGuard Home is a network-wide ad and tracker blocking DNS server. Once configured, it protects all devices on your home network — no client-side software needed on each device.
+
+      Key Features:
+      - Blocks ads, trackers, and malicious domains at the DNS level for every device on your network
+      - Built-in dashboard with real-time query statistics, per-client rules, and filtering logs
+      - Supports modern encrypted DNS protocols: DNS-over-HTTPS (DoH), DNS-over-TLS (DoT), DNS-over-QUIC (DoQ), and DNSCrypt
+      - Per-client configuration — apply different filtering rules to different devices
+      - Parental controls with safe search enforcement and adult content blocking
+      - Custom DNS rewrite rules for local hostnames
+      - Upstream DNS server selection (e.g. Cloudflare, Quad9, NextDNS)
+    de_de: |
+      AdGuard Home ist ein netzwerkweiter Werbeblocker und Tracker-Blocker auf DNS-Ebene. Nach der Einrichtung schützt er alle Geräte im Heimnetzwerk — ohne clientseitige Software auf jedem Gerät.
+
+      Hauptfunktionen:
+      - Blockiert Werbung, Tracker und schädliche Domains für alle Netzwerkgeräte
+      - Integriertes Dashboard mit Echtzeitstatistiken, gerätespezifischen Regeln und Filterprotokollen
+      - Unterstützt DNS-over-HTTPS (DoH), DNS-over-TLS (DoT), DNS-over-QUIC (DoQ) und DNSCrypt
+      - Gerätespezifische Konfiguration — unterschiedliche Filterregeln pro Gerät
+      - Kindersicherung mit Safe-Search-Erzwingung und Erwachseneninhalt-Sperrung
+      - Benutzerdefinierte DNS-Rewrite-Regeln für lokale Hostnamen
+    fr_fr: AdGuard Home est un serveur DNS de blocage des publicités et traceurs à l'échelle du réseau. Une fois configuré, il protège tous les appareils de votre réseau domestique sans logiciel supplémentaire.
+    es_es: AdGuard Home es un servidor DNS bloqueador de anuncios y rastreadores para toda la red. Una vez configurado, protege todos los dispositivos de tu red doméstica sin software adicional.
+    zh_cn: AdGuard Home 是一款网络级广告和跟踪器拦截 DNS 服务器。配置后，无需在每台设备上安装额外软件即可保护家庭网络中的所有设备。
+    ru_ru: AdGuard Home — DNS-сервер для блокировки рекламы и трекеров на уровне всей сети. После настройки защищает все устройства домашней сети без дополнительного ПО на каждом устройстве.
+    uk_ua: AdGuard Home — DNS-сервер для блокування реклами та трекерів на рівні всієї мережі без додаткового програмного забезпечення на кожному пристрої.
+    pl_pl: AdGuard Home to serwer DNS blokujący reklamy i trackery w całej sieci. Po skonfigurowaniu chroni wszystkie urządzenia w sieci domowej bez dodatkowego oprogramowania.
+    pt_br: O AdGuard Home é um servidor DNS bloqueador de anúncios e rastreadores para toda a rede doméstica, sem necessidade de software em cada dispositivo.
+    it_it: AdGuard Home è un server DNS per il blocco di pubblicità e tracker a livello di rete. Protegge tutti i dispositivi della rete domestica senza software aggiuntivo su ogni dispositivo.
+  developer: AdGuard
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/adguard-home.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AdGuardHome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AdGuardHome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AdGuardHome/screenshot-3.png
+  tagline:
+    en_us: Network-wide ad & tracker blocking DNS server
+    de_de: Netzwerkweiter Werbe- und Tracker-Blocker als DNS-Server
+    fr_fr: Serveur DNS de blocage publicitaire et de traqueurs pour tout le réseau
+    es_es: Servidor DNS bloqueador de anuncios y rastreadores para toda la red
+    zh_cn: 全网广告和跟踪器拦截 DNS 服务器
+    ru_ru: DNS-сервер блокировки рекламы и трекеров для всей сети
+    uk_ua: DNS-сервер блокування реклами для всієї мережі
+    pl_pl: Serwer DNS blokujący reklamy dla całej sieci
+    pt_br: Servidor DNS bloqueador de anúncios para toda a rede
+    it_it: Server DNS per il blocco di pubblicità a livello di rete
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/adguard-home.png
+  tips:
+    before_install:
+      en_us: |
+        **Step 1 — Initial setup (port 3001, only once)**
+        After installation, open **http://[ZimaOS-IP]:3001** to complete the first-time setup wizard.
+        Choose your admin username, password, and which network interfaces AdGuard Home should listen on.
+
+        **Step 2 — Use port 8088 as your main WebUI**
+        After completing the wizard, the main interface moves to **http://[ZimaOS-IP]:8088**.
+        Bookmark this address — port 3001 is no longer needed after setup.
+
+        **Step 3 — Configure DNS on your router (recommended)**
+        To protect all devices on your network, set your router's DNS server to the ZimaOS IP address.
+        Every device that gets its IP via DHCP will automatically use AdGuard Home for DNS.
+
+        **Step 4 — Or configure DNS per device**
+        If you prefer per-device control, manually set DNS to the ZimaOS IP on each device.
+
+        **⚠️ Port 53 conflict:** If ZimaOS itself uses port 53 for system DNS, the container may fail to start.
+        In that case, change the published port for DNS from `53` to a free port (e.g. `5335`) in the app settings,
+        and configure your router/devices to use that port — or check if `systemd-resolved` is occupying port 53
+        and disable it: `sudo systemctl stop systemd-resolved && sudo systemctl disable systemd-resolved`
+      de_de: |
+        **Schritt 1 — Ersteinrichtung (Port 3001, nur einmal)**
+        Nach der Installation öffne **http://[ZimaOS-IP]:3001** und schließe den Einrichtungsassistenten ab.
+        Lege Benutzername, Passwort und die Netzwerkschnittstellen fest.
+
+        **Schritt 2 — Port 8088 als Haupt-WebUI nutzen**
+        Nach dem Assistenten wechselt die Oberfläche zu **http://[ZimaOS-IP]:8088**.
+        Port 3001 wird nach der Einrichtung nicht mehr benötigt.
+
+        **Schritt 3 — DNS am Router einstellen (empfohlen)**
+        Setze den DNS-Server deines Routers auf die ZimaOS-IP-Adresse.
+        Alle Geräte im Netzwerk, die ihre IP per DHCP beziehen, nutzen dann automatisch AdGuard Home.
+
+        **Schritt 4 — Oder DNS pro Gerät einstellen**
+        Alternativ kannst du DNS auf jedem Gerät manuell auf die ZimaOS-IP setzen.
+
+        **⚠️ Port-53-Konflikt:** Falls ZimaOS selbst Port 53 belegt, startet der Container möglicherweise nicht.
+        In diesem Fall den DNS-Port in den App-Einstellungen von `53` auf einen freien Port (z.B. `5335`) ändern
+        und Router/Geräte entsprechend konfigurieren. Alternativ `systemd-resolved` deaktivieren:
+        `sudo systemctl stop systemd-resolved && sudo systemctl disable systemd-resolved`
+  title:
+    en_us: AdGuard Home
+  index: /
+  port_map: "8088"

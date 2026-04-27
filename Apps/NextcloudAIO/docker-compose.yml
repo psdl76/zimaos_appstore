@@ -1,0 +1,185 @@
+name: nextcloud-aio
+services:
+  nextcloud-aio-mastercontainer:
+    image: ghcr.io/nextcloud-releases/all-in-one:latest
+    init: true
+    deploy:
+      resources:
+        reservations:
+          memory: 512M
+    network_mode: bridge
+    ports:
+      - target: 80
+        published: "11080"
+        protocol: tcp
+      - target: 8080
+        published: "8080"
+        protocol: tcp
+      - target: 8443
+        published: "8443"
+        protocol: tcp
+    restart: unless-stopped
+    # Intel Quick Sync — hardware video transcoding for Nextcloud Memories (ZimaBoard 2: Intel N150)
+    # Remove this block if /dev/dri does not exist on your host
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+      - type: volume
+        source: nextcloud_aio_mastercontainer
+        target: /mnt/docker-aio-config
+    environment:
+      NEXTCLOUD_DATADIR: /DATA/AppData/nextcloud-aio/ncdata
+      NEXTCLOUD_UPLOAD_LIMIT: 16G
+      NEXTCLOUD_MAX_TIME: "3600"
+      NEXTCLOUD_MEMORY_LIMIT: 512M
+      NEXTCLOUD_STARTUP_APPS: deck tasks calendar contacts notes
+      SKIP_DOMAIN_VALIDATION: "false"
+    x-casaos:
+      envs:
+        - container: NEXTCLOUD_DATADIR
+          description:
+            en_us: Host directory for Nextcloud user data — do NOT change after first start!
+            de_de: Host-Verzeichnis für Nextcloud-Nutzerdaten — nach erstem Start NICHT ändern!
+        - container: NEXTCLOUD_UPLOAD_LIMIT
+          description:
+            en_us: Maximum upload file size (e.g. 16G, 32G)
+            de_de: Maximale Upload-Dateigröße (z.B. 16G, 32G)
+        - container: NEXTCLOUD_MEMORY_LIMIT
+          description:
+            en_us: PHP memory limit for Nextcloud (e.g. 512M, 1024M)
+            de_de: PHP-Speicherlimit für Nextcloud (z.B. 512M, 1024M)
+        - container: NEXTCLOUD_STARTUP_APPS
+          description:
+            en_us: Space-separated Nextcloud apps to install on first start
+            de_de: Leerzeichen-getrennte Nextcloud-Apps für die Erstinstallation
+        - container: SKIP_DOMAIN_VALIDATION
+          description:
+            en_us: Set to 'true' to skip domain validation (local network only, no Let's Encrypt)
+            de_de: Auf 'true' setzen, um Domain-Validierung zu überspringen (nur lokales Netz)
+      ports:
+        - container: "8080"
+          description:
+            en_us: AIO Admin Interface (initial setup, HTTPS with self-signed cert)
+            de_de: AIO-Administrationsoberfläche (Ersteinrichtung, HTTPS mit selbst-signiertem Zertifikat)
+        - container: "80"
+          description:
+            en_us: HTTP Port (for Let's Encrypt domain validation)
+            de_de: HTTP-Port (für Let's Encrypt Domain-Validierung)
+        - container: "8443"
+          description:
+            en_us: AIO Admin Interface HTTPS (alternative to 8080)
+            de_de: AIO-Admin-Oberfläche HTTPS (Alternative zu 8080)
+      volumes:
+        - container: /mnt/docker-aio-config
+          description:
+            en_us: AIO master container config (named volume — managed automatically)
+            de_de: AIO-Mastercontainer-Konfiguration (Named Volume — wird automatisch verwaltet)
+        - container: /var/run/docker.sock
+          description:
+            en_us: Docker socket — required for AIO to manage Nextcloud containers
+            de_de: Docker-Socket — erforderlich damit AIO die Nextcloud-Container verwalten kann
+    container_name: nextcloud-aio-mastercontainer
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: nextcloud-aio-mastercontainer
+  store_app_id: nextcloud-aio
+  author: CasaOS Team
+  category: Cloud
+  description:
+    en_us: |
+      Nextcloud All-in-One (AIO) is the officially recommended way to deploy Nextcloud. The single mastercontainer automatically manages all required services — Nextcloud itself, a database, Redis cache, a reverse proxy, and optionally Collabora Online, Talk, and Fulltextsearch — without any manual configuration.
+
+      Key Features:
+      - Automatic setup of all Nextcloud components via a single container
+      - Built-in backup solution with Borg Backup
+      - Integrated Collabora Online (document editing), Talk (video calls), and Fulltextsearch
+      - Automatic SSL certificates via Let's Encrypt
+      - One-click updates for all containers from the AIO interface
+      - Self-hosted file storage, calendar, contacts, notes, tasks, and more
+
+      After installation, open the AIO interface on port 8080 to complete setup. Nextcloud will then be available at your configured domain.
+    de_de: |
+      Nextcloud All-in-One (AIO) ist die offiziell empfohlene Methode zur Bereitstellung von Nextcloud. Der einzelne Mastercontainer verwaltet automatisch alle erforderlichen Dienste — Nextcloud selbst, eine Datenbank, Redis-Cache, einen Reverse-Proxy sowie optional Collabora Online, Talk und Volltextsuche — ohne manuelle Konfiguration.
+
+      Hauptfunktionen:
+      - Automatische Einrichtung aller Nextcloud-Komponenten über einen einzigen Container
+      - Integrierte Backup-Lösung mit Borg Backup
+      - Integriertes Collabora Online (Dokumentenbearbeitung), Talk (Videoanrufe) und Volltextsuche
+      - Automatische SSL-Zertifikate via Let's Encrypt
+      - Ein-Klick-Updates für alle Container über die AIO-Oberfläche
+      - Selbst gehostete Dateispeicherung, Kalender, Kontakte, Notizen, Aufgaben und mehr
+
+      Nach der Installation öffne die AIO-Oberfläche auf Port 8080, um die Einrichtung abzuschließen.
+    fr_fr: |
+      Nextcloud All-in-One (AIO) est la méthode officiellement recommandée pour déployer Nextcloud. Le conteneur maître unique gère automatiquement tous les services requis — Nextcloud, base de données, cache Redis, reverse proxy, et optionnellement Collabora Online, Talk et Fulltextsearch.
+    es_es: |
+      Nextcloud All-in-One (AIO) es el método oficialmente recomendado para desplegar Nextcloud. El contenedor maestro único gestiona automáticamente todos los servicios necesarios sin ninguna configuración manual.
+    zh_cn: |
+      Nextcloud All-in-One (AIO) 是官方推荐的 Nextcloud 部署方式。单个主容器自动管理所有必需的服务——Nextcloud 本身、数据库、Redis 缓存、反向代理，以及可选的 Collabora Online、Talk 和全文搜索——无需任何手动配置。
+    ru_ru: |
+      Nextcloud All-in-One (AIO) — официально рекомендуемый способ развертывания Nextcloud. Один главный контейнер автоматически управляет всеми необходимыми службами без ручной настройки.
+  developer: Nextcloud GmbH
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-4.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-5.png
+  tagline:
+    en_us: The officially recommended, self-hosted Nextcloud deployment
+    de_de: Die offiziell empfohlene, selbst gehostete Nextcloud-Bereitstellung
+    fr_fr: Le déploiement Nextcloud auto-hébergé officiellement recommandé
+    es_es: El despliegue Nextcloud auto-hospedado oficialmente recomendado
+    zh_cn: 官方推荐的自托管 Nextcloud 部署方式
+    ru_ru: Официально рекомендуемое развертывание Nextcloud
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
+  tips:
+    before_install:
+      en_us: |
+        **Setup guide:**
+        1. After installation, open **https://[ZimaOS-IP]:8080** (accept the self-signed certificate warning)
+        2. Copy the one-time passphrase shown and store it safely
+        3. Enter your domain name (or local IP address for LAN-only access)
+        4. Click "Submit" — AIO will automatically download and start all Nextcloud containers (this takes a few minutes)
+        5. Once all containers are running, open Nextcloud at your configured domain
+
+        **Local network (no public domain):**
+        Set `SKIP_DOMAIN_VALIDATION` to `true` and enter your ZimaOS IP address as the domain.
+
+        **⚠️ Important:** The `NEXTCLOUD_DATADIR` path must NOT be changed after the first start, as this would make all existing data inaccessible.
+
+        **⚠️ Docker socket:** This app requires access to the Docker socket (`/var/run/docker.sock`) to manage its child containers. This is normal and expected for Nextcloud AIO.
+
+        **Hardware acceleration (ZimaBoard 2 — Intel N150):**
+        This compose passes `/dev/dri` to the mastercontainer, enabling Intel Quick Sync hardware transcoding inside the Nextcloud child containers. This speeds up video preview generation and the Nextcloud Memories app significantly.
+        If your host does **not** have `/dev/dri` (non-Intel hardware), remove the `devices:` block from the compose before installing — otherwise the mastercontainer will fail to start.
+      de_de: |
+        **Einrichtungsanleitung:**
+        1. Nach der Installation öffne **https://[ZimaOS-IP]:8080** (Sicherheitswarnung für selbst-signiertes Zertifikat akzeptieren)
+        2. Kopiere die angezeigte Einmal-Passphrase und bewahre sie sicher auf
+        3. Gib deinen Domainnamen ein (oder lokale IP-Adresse für LAN-Zugriff)
+        4. Klicke auf "Absenden" — AIO lädt und startet alle Nextcloud-Container automatisch (dauert einige Minuten)
+        5. Sobald alle Container laufen, öffne Nextcloud unter deiner konfigurierten Domain
+
+        **Lokales Netzwerk (keine öffentliche Domain):**
+        Setze `SKIP_DOMAIN_VALIDATION` auf `true` und gib deine ZimaOS-IP-Adresse als Domain ein.
+
+        **⚠️ Wichtig:** Der `NEXTCLOUD_DATADIR`-Pfad darf nach dem ersten Start NICHT geändert werden, da sonst alle vorhandenen Daten unzugänglich werden.
+
+        **Hardware-Beschleunigung (ZimaBoard 2 — Intel N150):**
+        Dieses Compose übergibt `/dev/dri` an den Mastercontainer, wodurch Intel Quick Sync Hardware-Transcodierung in den Nextcloud-Child-Containern aktiviert wird. Das beschleunigt die Video-Vorschau-Generierung und die Nextcloud Memories App erheblich.
+        Wenn auf dem Host **kein** `/dev/dri` vorhanden ist (keine Intel-Hardware), den `devices:`-Block vor der Installation aus der Compose-Datei entfernen — andernfalls startet der Mastercontainer nicht.
+  title:
+    en_us: Nextcloud AIO
+  index: /
+  port_map: "8080"

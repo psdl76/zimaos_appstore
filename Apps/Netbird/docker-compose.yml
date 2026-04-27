@@ -1,0 +1,748 @@
+name: netbird
+services:
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 0 — Init (läuft einmalig, generiert alle Config-Dateien)
+  # Reads env vars NETBIRD_DOMAIN + TRAEFIK_ACME_EMAIL, writes:
+  #   config.yaml, dashboard.env, traefik-static.yaml,
+  #   traefik-dynamic.yaml (with full routing), proxy.env (placeholder)
+  # ═══════════════════════════════════════════════════════════════════
+  netbird-init:
+    image: alpine:3
+    container_name: netbird-init
+    restart: "no"
+    environment:
+      NETBIRD_DOMAIN: ""
+      TRAEFIK_ACME_EMAIL: ""
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /netbird-config
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        CONFIG_DIR=/netbird-config
+
+        if [ -f "${CONFIG_DIR}/config.yaml" ]; then
+          echo "[init] Already initialized — skipping."
+          exit 0
+        fi
+
+        if [ -z "${NETBIRD_DOMAIN}" ] || [ -z "${TRAEFIK_ACME_EMAIL}" ]; then
+          echo "[init] ERROR: NETBIRD_DOMAIN and TRAEFIK_ACME_EMAIL must be set."
+          exit 1
+        fi
+
+        echo "[init] Installing openssl..."
+        apk add -q --no-cache openssl
+
+        echo "[init] Generating cryptographic secrets..."
+        RELAY_SECRET=$(openssl rand -base64 32 | tr -d '=')
+        ENCRYPTION_KEY=$(openssl rand -base64 32)
+
+        echo "[init] Writing config.yaml..."
+        cat > "${CONFIG_DIR}/config.yaml" << ENDCONFIG
+        server:
+          listenAddress: ":80"
+          exposedAddress: "https://${NETBIRD_DOMAIN}:443"
+          stunPorts:
+            - 3478
+          metricsPort: 9090
+          healthcheckAddress: ":9000"
+          logLevel: "info"
+          logFile: "console"
+          authSecret: "${RELAY_SECRET}"
+          dataDir: "/var/lib/netbird"
+          auth:
+            issuer: "https://${NETBIRD_DOMAIN}/oauth2"
+            signKeyRefreshEnabled: true
+            dashboardRedirectURIs:
+              - "https://${NETBIRD_DOMAIN}/nb-auth"
+              - "https://${NETBIRD_DOMAIN}/nb-silent-auth"
+            cliRedirectURIs:
+              - "http://localhost:53000/"
+          reverseProxy:
+            trustedHTTPProxies:
+              - "172.30.0.10/32"
+          store:
+            engine: "sqlite"
+            encryptionKey: "${ENCRYPTION_KEY}"
+        ENDCONFIG
+
+        echo "[init] Writing dashboard.env..."
+        cat > "${CONFIG_DIR}/dashboard.env" << ENDDASH
+        NETBIRD_MGMT_API_ENDPOINT=https://${NETBIRD_DOMAIN}
+        NETBIRD_MGMT_GRPC_API_ENDPOINT=https://${NETBIRD_DOMAIN}
+        AUTH_AUDIENCE=netbird-dashboard
+        AUTH_CLIENT_ID=netbird-dashboard
+        AUTH_CLIENT_SECRET=
+        AUTH_AUTHORITY=https://${NETBIRD_DOMAIN}/oauth2
+        USE_AUTH0=false
+        AUTH_SUPPORTED_SCOPES=openid profile email groups
+        AUTH_REDIRECT_URI=/nb-auth
+        AUTH_SILENT_REDIRECT_URI=/nb-silent-auth
+        NGINX_SSL_PORT=443
+        LETSENCRYPT_DOMAIN=none
+        ENDDASH
+
+        echo "[init] Writing traefik-static.yaml..."
+        cat > "${CONFIG_DIR}/traefik-static.yaml" << ENDSTATIC
+        log:
+          level: INFO
+        accessLog: {}
+        providers:
+          file:
+            filename: /netbird-config/traefik-dynamic.yaml
+            watch: true
+        entryPoints:
+          web:
+            address: ":80"
+            http:
+              redirections:
+                entryPoint:
+                  to: websecure
+                  scheme: https
+          websecure:
+            address: ":443"
+            allowACMEByPass: true
+            transport:
+              respondingTimeouts:
+                readTimeout: "0s"
+                writeTimeout: "0s"
+                idleTimeout: "0s"
+        certificatesResolvers:
+          letsencrypt:
+            acme:
+              email: "${TRAEFIK_ACME_EMAIL}"
+              storage: /letsencrypt/acme.json
+              tlsChallenge: {}
+        serversTransport:
+          forwardingTimeouts:
+            responseHeaderTimeout: "0s"
+            idleConnTimeout: "0s"
+        ENDSTATIC
+
+        echo "[init] Writing traefik-dynamic.yaml (routing + TCP transport)..."
+        cat > "${CONFIG_DIR}/traefik-dynamic.yaml" << ENDDYNAMIC
+        tcp:
+          serversTransports:
+            pp-v2:
+              proxyProtocol:
+                version: 2
+          routers:
+            proxy-passthrough:
+              entryPoints:
+                - websecure
+              rule: "HostSNI(\`*.${NETBIRD_DOMAIN}\`)"
+              tls:
+                passthrough: true
+              service: proxy-tls
+              priority: 1
+          services:
+            proxy-tls:
+              loadBalancer:
+                servers:
+                  - address: "netbird-proxy:8443"
+                serversTransport: pp-v2
+
+        http:
+          routers:
+            netbird-grpc:
+              entryPoints:
+                - websecure
+              rule: "Host(\`${NETBIRD_DOMAIN}\`) && (PathPrefix(\`/signalexchange.SignalExchange/\`) || PathPrefix(\`/management.ManagementService/\`))"
+              tls:
+                certResolver: letsencrypt
+              service: netbird-server-h2c
+              priority: 100
+
+            netbird-backend:
+              entryPoints:
+                - websecure
+              rule: "Host(\`${NETBIRD_DOMAIN}\`) && (PathPrefix(\`/relay\`) || PathPrefix(\`/ws-proxy/\`) || PathPrefix(\`/api\`) || PathPrefix(\`/oauth2\`))"
+              tls:
+                certResolver: letsencrypt
+              service: netbird-server
+              priority: 100
+
+            netbird-dashboard:
+              entryPoints:
+                - websecure
+              rule: "Host(\`${NETBIRD_DOMAIN}\`)"
+              tls:
+                certResolver: letsencrypt
+              service: dashboard
+              priority: 1
+
+          services:
+            dashboard:
+              loadBalancer:
+                servers:
+                  - url: "http://netbird-dashboard:80"
+
+            netbird-server:
+              loadBalancer:
+                servers:
+                  - url: "http://netbird-server:80"
+
+            netbird-server-h2c:
+              loadBalancer:
+                servers:
+                  - url: "h2c://netbird-server:80"
+        ENDDYNAMIC
+
+        echo "[init] Writing proxy.env (placeholder — will be updated by netbird-setup)..."
+        cat > "${CONFIG_DIR}/proxy.env" << ENDPROXY
+        NB_PROXY_TOKEN=placeholder
+        NB_PROXY_MANAGEMENT_ADDRESS=http://netbird-server:80
+        NB_PROXY_ALLOW_INSECURE=true
+        NB_PROXY_DOMAIN=${NETBIRD_DOMAIN}
+        NB_PROXY_ADDRESS=:8443
+        NB_PROXY_CERTIFICATE_DIRECTORY=/certs
+        NB_PROXY_ACME_CERTIFICATES=true
+        NB_PROXY_ACME_CHALLENGE_TYPE=tls-alpn-01
+        NB_PROXY_FORWARDED_PROTO=https
+        NB_PROXY_PROXY_PROTOCOL=true
+        NB_PROXY_TRUSTED_PROXIES=172.30.0.10
+        NB_PROXY_DEBUG_LOGS=false
+        ENDPROXY
+
+        echo "[init] All configuration files generated successfully."
+    x-casaos:
+      envs:
+        - container: NETBIRD_DOMAIN
+          description:
+            en_us: "Your public domain for NetBird (e.g. netbird.yourdomain.com) — DNS must be configured BEFORE install"
+            de_de: "Deine öffentliche Domain (z.B. netbird.deinedomain.de) — DNS VOR der Installation konfigurieren"
+        - container: TRAEFIK_ACME_EMAIL
+          description:
+            en_us: "Email address for Let's Encrypt SSL certificate notifications"
+            de_de: "E-Mail-Adresse für Let's Encrypt SSL-Zertifikat-Benachrichtigungen"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 1a — Traefik: Reverse proxy + automatic TLS (Let's Encrypt)
+  # File-based provider only — no Docker socket needed for routing.
+  # Static config + all routes written by netbird-init.
+  # ═══════════════════════════════════════════════════════════════════
+  traefik:
+    image: traefik:v3.6
+    container_name: netbird-traefik
+    restart: unless-stopped
+    networks:
+      netbird:
+        ipv4_address: 172.30.0.10
+    depends_on:
+      netbird-init:
+        condition: service_completed_successfully
+    command:
+      - --configFile=/netbird-config/traefik-static.yaml
+    ports:
+      - target: 80
+        published: "80"
+        protocol: tcp
+      - target: 443
+        published: "443"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/traefik/letsencrypt
+        target: /letsencrypt
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /netbird-config
+        read_only: true
+    logging:
+      driver: json-file
+      options:
+        max-size: 500m
+        max-file: "2"
+    x-casaos:
+      ports:
+        - container: "80"
+          description:
+            en_us: HTTP — redirects to HTTPS, required for Let's Encrypt domain validation
+            de_de: HTTP — Weiterleitung auf HTTPS, erforderlich für Let's Encrypt
+        - container: "443"
+          description:
+            en_us: HTTPS — NetBird Dashboard, Management API, Signal, Relay
+            de_de: HTTPS — NetBird Dashboard, Management API, Signal, Relay
+      volumes:
+        - container: /letsencrypt
+          description:
+            en_us: Let's Encrypt certificate storage — do not delete!
+            de_de: Let's Encrypt Zertifikatsspeicher — nicht löschen!
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 1b — NetBird Dashboard: Web UI
+  # ═══════════════════════════════════════════════════════════════════
+  dashboard:
+    image: netbirdio/dashboard:latest
+    container_name: netbird-dashboard
+    restart: unless-stopped
+    networks: [netbird]
+    depends_on:
+      netbird-init:
+        condition: service_completed_successfully
+    env_file:
+      - /DATA/AppData/$AppID/config/dashboard.env
+    logging:
+      driver: json-file
+      options:
+        max-size: 500m
+        max-file: "2"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 1c — NetBird Server: Management + Signal + Relay + STUN
+  # Single combined binary — replaces the old separate containers.
+  # ═══════════════════════════════════════════════════════════════════
+  netbird-server:
+    image: netbirdio/netbird-server:latest
+    container_name: netbird-server
+    restart: unless-stopped
+    networks: [netbird]
+    depends_on:
+      netbird-init:
+        condition: service_completed_successfully
+    ports:
+      - target: 3478
+        published: "3478"
+        protocol: udp
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/data
+        target: /var/lib/netbird
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /netbird-config
+        read_only: true
+    command: ["--config", "/netbird-config/config.yaml"]
+    logging:
+      driver: json-file
+      options:
+        max-size: 500m
+        max-file: "2"
+    x-casaos:
+      ports:
+        - container: "3478"
+          description:
+            en_us: STUN/UDP — required for NAT traversal and peer-to-peer connections
+            de_de: STUN/UDP — erforderlich für NAT-Traversal und Peer-to-Peer-Verbindungen
+      volumes:
+        - container: /var/lib/netbird
+          description:
+            en_us: NetBird server data (database + encryption keys — do not delete!)
+            de_de: NetBird-Serverdaten (Datenbank + Schlüssel — nicht löschen!)
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 1d — CrowdSec: Community-driven IP reputation blocking
+  # Blocks known malicious IPs before they reach your services.
+  # healthcheck ensures setup waits until LAPI is fully ready.
+  # ═══════════════════════════════════════════════════════════════════
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: netbird-crowdsec
+    restart: unless-stopped
+    networks: [netbird]
+    depends_on:
+      netbird-init:
+        condition: service_completed_successfully
+    environment:
+      COLLECTIONS: crowdsecurity/linux
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/crowdsec/config
+        target: /etc/crowdsec
+      - type: bind
+        source: /DATA/AppData/$AppID/crowdsec/data
+        target: /var/lib/crowdsec/data
+    healthcheck:
+      test: ["CMD", "cscli", "lapi", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 500m
+        max-file: "2"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 2 — Setup: Post-start token generation (runs once, then exits)
+  # Waits for netbird-server health endpoint + CrowdSec LAPI.
+  # Uses docker exec to create proxy token + CrowdSec bouncer key.
+  # Writes final proxy.env with real credentials.
+  # Idempotent: skips on subsequent starts if already configured.
+  # ═══════════════════════════════════════════════════════════════════
+  netbird-setup:
+    image: docker:27-cli
+    container_name: netbird-setup
+    restart: "no"
+    networks: [netbird]
+    depends_on:
+      netbird-server:
+        condition: service_started
+      crowdsec:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /netbird-config
+    environment:
+      NETBIRD_DOMAIN: ""
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        CONFIG_DIR=/netbird-config
+
+        # Idempotency: skip if proxy.env already has a real (non-placeholder) token
+        if grep -q "^NB_PROXY_TOKEN=[a-zA-Z0-9]" "${CONFIG_DIR}/proxy.env" 2>/dev/null \
+           && ! grep -q "^NB_PROXY_TOKEN=placeholder" "${CONFIG_DIR}/proxy.env" 2>/dev/null; then
+          echo "[setup] Proxy already configured — skipping setup."
+          exit 0
+        fi
+
+        echo "[setup] Waiting for NetBird server health endpoint..."
+        RETRIES=0
+        until wget -qO /dev/null "http://netbird-server:9000/" 2>/dev/null; do
+          RETRIES=$((RETRIES + 1))
+          if [ $RETRIES -ge 60 ]; then
+            echo "[setup] ERROR: NetBird server did not become ready after 5 minutes."
+            docker logs netbird-server --tail=30
+            exit 1
+          fi
+          sleep 5
+        done
+        echo "[setup] NetBird server is ready."
+
+        echo "[setup] Creating proxy access token..."
+        PROXY_TOKEN=$(docker exec netbird-server \
+          /go/bin/netbird-server token create \
+          --name "netbird-proxy" \
+          --config /netbird-config/config.yaml 2>/dev/null \
+          | grep "^Token:" | awk "{print \$2}")
+
+        if [ -z "$PROXY_TOKEN" ]; then
+          echo "[setup] ERROR: Failed to create proxy token."
+          docker logs netbird-server --tail=20
+          exit 1
+        fi
+        echo "[setup] Proxy token created successfully."
+
+        echo "[setup] Waiting for CrowdSec LAPI..."
+        RETRIES=0
+        until docker exec netbird-crowdsec cscli lapi status >/dev/null 2>&1; do
+          RETRIES=$((RETRIES + 1))
+          if [ $RETRIES -ge 30 ]; then
+            echo "[setup] ERROR: CrowdSec did not become ready."
+            docker logs netbird-crowdsec --tail=20
+            exit 1
+          fi
+          sleep 3
+        done
+        echo "[setup] CrowdSec LAPI is ready."
+
+        echo "[setup] Registering CrowdSec bouncer..."
+        docker exec netbird-crowdsec cscli bouncers delete netbird-proxy 2>/dev/null || true
+        CROWDSEC_KEY=$(docker exec netbird-crowdsec \
+          cscli bouncers add netbird-proxy -o raw 2>/dev/null)
+
+        if [ -z "$CROWDSEC_KEY" ]; then
+          echo "[setup] ERROR: Failed to create CrowdSec bouncer key."
+          docker logs netbird-crowdsec --tail=20
+          exit 1
+        fi
+        echo "[setup] CrowdSec bouncer registered."
+
+        echo "[setup] Writing final proxy.env with real credentials..."
+        cat > "${CONFIG_DIR}/proxy.env" << ENDPROXY
+        NB_PROXY_TOKEN=${PROXY_TOKEN}
+        NB_PROXY_MANAGEMENT_ADDRESS=http://netbird-server:80
+        NB_PROXY_ALLOW_INSECURE=true
+        NB_PROXY_DOMAIN=${NETBIRD_DOMAIN}
+        NB_PROXY_ADDRESS=:8443
+        NB_PROXY_CERTIFICATE_DIRECTORY=/certs
+        NB_PROXY_ACME_CERTIFICATES=true
+        NB_PROXY_ACME_CHALLENGE_TYPE=tls-alpn-01
+        NB_PROXY_FORWARDED_PROTO=https
+        NB_PROXY_PROXY_PROTOCOL=true
+        NB_PROXY_TRUSTED_PROXIES=172.30.0.10
+        NB_PROXY_DEBUG_LOGS=false
+        NB_PROXY_CROWDSEC_API_URL=http://crowdsec:8080
+        NB_PROXY_CROWDSEC_API_KEY=${CROWDSEC_KEY}
+        ENDPROXY
+
+        echo "[setup] ✓ Setup complete. Proxy service will now start."
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 3 — Proxy: NetBird proxy service
+  # Starts ONLY after netbird-setup has exited successfully.
+  # proxy.env at this point contains real token + CrowdSec key.
+  # On subsequent reboots: proxy.env already has real credentials,
+  # so Docker restarts this container directly without waiting for setup.
+  # ═══════════════════════════════════════════════════════════════════
+  proxy:
+    image: netbirdio/reverse-proxy:latest
+    container_name: netbird-proxy
+    restart: unless-stopped
+    networks: [netbird]
+    depends_on:
+      netbird-setup:
+        condition: service_completed_successfully
+    ports:
+      - target: 51820
+        published: "51820"
+        protocol: udp
+    env_file:
+      - /DATA/AppData/$AppID/config/proxy.env
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/proxy/certs
+        target: /certs
+    logging:
+      driver: json-file
+      options:
+        max-size: 500m
+        max-file: "2"
+    x-casaos:
+      ports:
+        - container: "51820"
+          description:
+            en_us: WireGuard/UDP — for P2P proxy connections (only needed if using proxy resources)
+            de_de: WireGuard/UDP — für P2P-Proxy-Verbindungen (nur bei Proxy-Ressourcen nötig)
+      volumes:
+        - container: /certs
+          description:
+            en_us: Proxy TLS certificates (managed automatically via ACME)
+            de_de: Proxy TLS-Zertifikate (werden automatisch via ACME verwaltet)
+
+networks:
+  netbird:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          gateway: 172.30.0.1
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: traefik
+  store_app_id: netbird
+  author: CasaOS Team
+  category: Network
+  description:
+    en_us: |
+      NetBird is an open-source, WireGuard-based network overlay that connects your devices into a secure private network — without opening firewall ports or configuring complex network infrastructure. Peers connect directly or via relay, always encrypted end-to-end.
+
+      This self-hosted deployment includes all components:
+      • NetBird Server — Management, Signal, Relay and STUN in a single binary
+      • NetBird Dashboard — Web UI for network and access policy management
+      • NetBird Proxy — Selectively expose internal resources to the internet via your domain
+      • Traefik — Automatic HTTPS via Let's Encrypt (no manual certificate management)
+      • CrowdSec — Community-driven IP reputation blocking against known threat actors
+
+      The installation is fully automated via an init container (generates all config and secrets) and a setup container (creates proxy token + CrowdSec bouncer key after first start).
+
+      ⚠️ Requires a publicly accessible domain with DNS configured BEFORE installation. See the setup guide below.
+    de_de: |
+      NetBird ist eine quelloffene, WireGuard-basierte Netzwerk-Overlay-Plattform, die Geräte zu einem sicheren privaten Netzwerk verbindet — ohne Firewall-Ports öffnen oder komplexe Infrastruktur konfigurieren zu müssen.
+
+      Dieses Self-hosted Deployment enthält alle Komponenten:
+      • NetBird Server — Management, Signal, Relay und STUN in einem Binary
+      • NetBird Dashboard — Web-Oberfläche für Netzwerk- und Richtlinienverwaltung
+      • NetBird Proxy — Interne Ressourcen selektiv über deine Domain ins Internet exponieren
+      • Traefik — Automatisches HTTPS via Let's Encrypt
+      • CrowdSec — Community-basierte IP-Reputation-Sperre gegen bekannte Bedrohungen
+
+      ⚠️ Erfordert eine öffentlich erreichbare Domain mit DNS-Konfiguration VOR der Installation.
+  developer: NetBird
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/netbird.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Netbird/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Netbird/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Netbird/screenshot-3.png
+  tagline:
+    en_us: Open-source WireGuard-based secure network overlay — self-hosted
+    de_de: Quelloffenes WireGuard-Netzwerk-Overlay — selbst gehostet
+    fr_fr: Réseau overlay WireGuard open-source — auto-hébergé
+    ru_ru: Открытая WireGuard-сеть — самостоятельный хостинг
+    zh_cn: 开源 WireGuard 网络覆盖 — 自托管
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/netbird.png
+  tips:
+    before_install:
+      en_us: |
+        ## ⏱ Step 1 — BEFORE installation: Configure DNS records
+
+        Log into your domain registrar and create these two records:
+
+        | Type  | Name                        | Target / Value              | Purpose                        |
+        |-------|-----------------------------|-----------------------------|--------------------------------|
+        | A     | `netbird.yourdomain.com`    | `[Your ZimaOS public IP]`   | Main NetBird domain            |
+        | CNAME | `*.netbird.yourdomain.com`  | `netbird.yourdomain.com`    | Wildcard for proxy resources   |
+
+        > **DNS propagation takes 1–24 hours.** Verify with: `nslookup netbird.yourdomain.com`
+        > The wildcard CNAME is required for the NetBird Proxy feature (exposing internal resources).
+
+        ---
+
+        ## ⏱ Step 2 — BEFORE installation: Open firewall ports
+
+        Make sure the following ports are reachable from the internet on your ZimaOS machine:
+
+        | Port     | Protocol | Required | Purpose                                 |
+        |----------|----------|----------|-----------------------------------------|
+        | `80`     | TCP      | ✅ Yes   | HTTP → HTTPS redirect + Let's Encrypt   |
+        | `443`    | TCP      | ✅ Yes   | HTTPS — Dashboard, API, Signal, Relay   |
+        | `3478`   | UDP      | ✅ Yes   | STUN — NAT traversal for WireGuard      |
+        | `51820`  | UDP      | Optional | WireGuard Proxy — P2P resource access   |
+
+        ---
+
+        ## ⏱ Step 3 — DURING installation: Set environment variables
+
+        In the app installation dialog, configure:
+
+        - **`NETBIRD_DOMAIN`** → Your domain, e.g. `netbird.yourdomain.com`
+        - **`TRAEFIK_ACME_EMAIL`** → Your email address (for Let's Encrypt notifications)
+
+        ⚠️ These values are written into encrypted config files at first start and **cannot be changed afterwards** without full reinstallation.
+
+        ---
+
+        ## ⏱ Step 4 — AFTER clicking install: Automated startup phases
+
+        The installation runs in 3 automated phases. **Do not restart the app during this process.**
+
+        **Phase 0 — Init (~30 seconds)**
+        The `netbird-init` container runs first and generates all configuration files:
+        config.yaml (with generated encryption keys), dashboard.env, Traefik routing config, and a placeholder proxy.env.
+
+        **Phase 1 — Core services start (~1–3 minutes)**
+        Traefik, NetBird Server, Dashboard, and CrowdSec all start in parallel.
+        Traefik requests the Let's Encrypt SSL certificate for your domain (this may take 1–2 minutes).
+
+        **Phase 2 — Automated setup (~2–4 minutes)**
+        The `netbird-setup` container runs automatically and:
+        1. Polls the NetBird server health endpoint until ready
+        2. Creates the proxy access token via the internal API
+        3. Waits for CrowdSec LAPI to be fully ready
+        4. Registers the CrowdSec bouncer and retrieves the API key
+        5. Writes the final `proxy.env` with all real credentials
+        6. Exits successfully
+
+        **Phase 3 — Proxy starts (~30 seconds)**
+        The NetBird Proxy container starts with the real token and CrowdSec key from Phase 2.
+
+        **Total time: approximately 5–10 minutes.**
+        You can monitor progress in the container logs.
+
+        ---
+
+        ## ⏱ Step 5 — AFTER startup: Create your admin account
+
+        Once all containers are running:
+
+        1. Open **`https://netbird.yourdomain.com`** in your browser
+        2. If you see a certificate warning, wait 1–2 minutes and reload (Let's Encrypt is still issuing)
+        3. The first-run setup page appears — create your administrator account
+        4. The **first registered user automatically becomes the administrator**
+
+        ---
+
+        ## ⏱ Step 6 — AFTER first login: Recommended configuration
+
+        **Activate CrowdSec per service** (not enabled globally by default):
+        Dashboard → Access Control → select a resource → enable CrowdSec
+
+        **Optional: Enroll in CrowdSec Console** (free, for a dashboard and premium blocklists):
+        ```
+        docker exec netbird-crowdsec cscli console enroll <your-enrollment-key>
+        ```
+        Get your enrollment key at: https://app.crowdsec.net
+
+        **Add your first device:**
+        Dashboard → Peers → Add peer → follow the instructions for your OS
+
+      de_de: |
+        ## ⏱ Schritt 1 — VOR der Installation: DNS-Einträge konfigurieren
+
+        Logge dich bei deinem Domain-Registrar ein und erstelle diese zwei Einträge:
+
+        | Typ   | Name                          | Ziel / Wert                   | Zweck                              |
+        |-------|-------------------------------|-------------------------------|------------------------------------|
+        | A     | `netbird.deinedomain.de`      | `[Öffentliche ZimaOS IP]`     | Haupt-NetBird-Domain               |
+        | CNAME | `*.netbird.deinedomain.de`    | `netbird.deinedomain.de`      | Wildcard für Proxy-Ressourcen      |
+
+        > **DNS-Propagation dauert 1–24 Stunden.** Prüfen mit: `nslookup netbird.deinedomain.de`
+
+        ---
+
+        ## ⏱ Schritt 2 — VOR der Installation: Firewall-Ports öffnen
+
+        | Port    | Protokoll | Pflicht     | Zweck                                      |
+        |---------|-----------|-------------|--------------------------------------------|
+        | `80`    | TCP       | ✅ Ja       | HTTP → HTTPS + Let's Encrypt-Validierung   |
+        | `443`   | TCP       | ✅ Ja       | HTTPS — Dashboard, API, Signal, Relay      |
+        | `3478`  | UDP       | ✅ Ja       | STUN — NAT-Traversal für WireGuard         |
+        | `51820` | UDP       | Optional    | WireGuard Proxy — P2P-Ressourcenzugriff    |
+
+        ---
+
+        ## ⏱ Schritt 3 — BEI der Installation: Umgebungsvariablen setzen
+
+        - **`NETBIRD_DOMAIN`** → Deine Domain, z.B. `netbird.deinedomain.de`
+        - **`TRAEFIK_ACME_EMAIL`** → Deine E-Mail-Adresse
+
+        ⚠️ Diese Werte werden beim ersten Start in verschlüsselte Config-Dateien geschrieben und können danach **nicht mehr geändert** werden.
+
+        ---
+
+        ## ⏱ Schritt 4 — NACH dem Installieren: Automatische Startphasen
+
+        **Phase 0 (~30 Sek):** Init-Container generiert alle Config-Dateien + Crypto-Schlüssel.
+
+        **Phase 1 (~1–3 Min):** Traefik, NetBird Server, Dashboard und CrowdSec starten. Traefik beantragt das SSL-Zertifikat via Let's Encrypt.
+
+        **Phase 2 (~2–4 Min):** Setup-Container läuft automatisch:
+        1. Wartet auf NetBird-Server-Bereitschaft
+        2. Erstellt Proxy-Zugriffstoken intern
+        3. Wartet auf CrowdSec LAPI
+        4. Registriert CrowdSec-Bouncer und holt API-Key
+        5. Schreibt finale proxy.env mit echten Zugangsdaten
+
+        **Phase 3 (~30 Sek):** Proxy startet mit echtem Token + CrowdSec-Key.
+
+        **Gesamtzeit: ca. 5–10 Minuten.**
+
+        ---
+
+        ## ⏱ Schritt 5 — NACH dem Start: Admin-Account erstellen
+
+        1. Öffne **`https://netbird.deinedomain.de`** im Browser
+        2. Bei Zertifikatswarnung: 1–2 Minuten warten und neu laden
+        3. Erstelle deinen Administrator-Account (der erste Account wird automatisch Admin)
+
+        ---
+
+        ## ⏱ Schritt 6 — NACH dem ersten Login: Empfohlene Konfiguration
+
+        **CrowdSec pro Service aktivieren:**
+        Dashboard → Access Control → Ressource auswählen → CrowdSec aktivieren
+
+        **Optional: CrowdSec Console Enrollment:**
+        ```
+        docker exec netbird-crowdsec cscli console enroll <dein-enrollment-key>
+        ```
+        Enrollment-Key unter: https://app.crowdsec.net
+  title:
+    en_us: NetBird
+  index: /
+  port_map: "443"

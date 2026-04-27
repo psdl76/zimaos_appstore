@@ -1,0 +1,232 @@
+name: home-assistant
+services:
+  home-assistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    deploy:
+      resources:
+        reservations:
+          memory: 512M
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /config
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+      - type: bind
+        source: /run/dbus
+        target: /run/dbus
+        read_only: true
+    environment:
+      TZ: Europe/Berlin
+    x-casaos:
+      envs:
+        - container: TZ
+          description:
+            en_us: "Timezone — e.g. Europe/Berlin, America/New_York, Asia/Tokyo"
+            de_de: "Zeitzone — z.B. Europe/Berlin, America/New_York, Asia/Tokyo"
+      volumes:
+        - container: /config
+          description:
+            en_us: Home Assistant configuration directory — automations, integrations, and settings
+            de_de: Konfigurationsverzeichnis — Automatisierungen, Integrationen und Einstellungen
+        - container: /run/dbus
+          description:
+            en_us: D-Bus socket — required for Bluetooth integration
+            de_de: D-Bus-Socket — erforderlich für Bluetooth-Integration
+    container_name: home-assistant
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: home-assistant
+  author: CasaOS Team
+  category: Smart Home
+  description:
+    en_us: |
+      Home Assistant is the leading open-source home automation platform. It integrates with thousands of devices and services — smart lights, thermostats, sensors, cameras, media players, and more — giving you complete local control without depending on any cloud.
+
+      This deploys Home Assistant Container, the official Docker-based installation. It runs the full Home Assistant core with all integrations, automations, and the dashboard. Note: Add-ons (like the built-in Mosquitto or ESPHome) require Home Assistant OS — for those, run separate containers alongside this one.
+
+      Key Features:
+      - Local control — works fully offline, no cloud account required
+      - 3000+ integrations: Philips Hue, IKEA Tradfri, Apple HomeKit, Z-Wave, Zigbee, MQTT, and hundreds more
+      - Powerful automation engine with triggers, conditions, and actions
+      - Energy monitoring dashboard
+      - Mobile apps for iOS and Android with remote access
+      - Voice assistant integration (Assist, Google Assistant, Amazon Alexa)
+      - Dashboards customizable with Lovelace cards
+    de_de: |
+      Home Assistant ist die führende Open-Source-Plattform für Heimautomatisierung. Es integriert tausende Geräte und Dienste — smarte Lampen, Thermostate, Sensoren, Kameras, Mediaplayer und mehr — mit vollständiger lokaler Kontrolle ohne Cloud-Abhängigkeit.
+
+      Diese Installation nutzt Home Assistant Container (offizielle Docker-Bereitstellung). Sie enthält den vollständigen Home Assistant Core mit allen Integrationen, Automatisierungen und dem Dashboard. Hinweis: Add-ons (wie der integrierte Mosquitto-Broker oder ESPHome) erfordern Home Assistant OS — dafür separate Container neben dieser Installation betreiben.
+
+      Hauptfunktionen:
+      - Lokale Steuerung — funktioniert vollständig offline, keine Cloud erforderlich
+      - 3000+ Integrationen: Philips Hue, IKEA Tradfri, Apple HomeKit, Z-Wave, Zigbee, MQTT und viele mehr
+      - Leistungsstarke Automatisierungsengine mit Triggern, Bedingungen und Aktionen
+      - Energie-Monitoring-Dashboard
+      - Mobile Apps für iOS und Android mit Fernzugriff
+      - Sprachassistenten-Integration (Assist, Google Assistant, Amazon Alexa)
+      - Anpassbare Dashboards mit Lovelace-Karten
+    fr_fr: |
+      Home Assistant est la principale plateforme domotique open-source. Elle s'intègre avec des milliers d'appareils et services pour un contrôle local complet sans dépendance au cloud.
+    zh_cn: |
+      Home Assistant 是领先的开源智能家居平台，支持数千种设备和服务集成，实现完全本地控制，无需依赖云服务。
+    ru_ru: |
+      Home Assistant — ведущая платформа домашней автоматизации с открытым исходным кодом. Интегрируется с тысячами устройств и сервисов с полным локальным управлением без облака.
+  developer: Home Assistant
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/home-assistant.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/HomeAssistant/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/HomeAssistant/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/HomeAssistant/screenshot-3.png
+  tagline:
+    en_us: Open-source home automation — local control, 3000+ integrations
+    de_de: Open-Source-Heimautomatisierung — lokale Steuerung, 3000+ Integrationen
+    fr_fr: Domotique open-source — contrôle local, 3000+ intégrations
+    zh_cn: 开源智能家居平台 — 本地控制，3000+ 集成
+    ru_ru: Платформа умного дома — локальное управление, 3000+ интеграций
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/home-assistant.png
+  tips:
+    before_install:
+      en_us: |
+        ## Why host network mode?
+
+        Home Assistant runs with `network_mode: host` — it binds directly to the host network. This is required for:
+        - **mDNS / Bonjour** — discovering Chromecast, Sonos, Apple TV, and other local devices automatically
+        - **DHCP listener** — device tracking by IP address
+        - **Bluetooth** — BLE sensors and devices
+
+        Home Assistant is directly accessible at **http://[ZimaOS-IP]:8123** — no port remapping needed.
+
+        ---
+
+        ## Timezone
+
+        Set the `TZ` environment variable to your local timezone before installing.
+        Examples: `Europe/Berlin`, `America/New_York`, `America/Los_Angeles`, `Asia/Tokyo`
+
+        Full list: [tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+
+        ---
+
+        ## First start
+
+        Home Assistant takes **1–3 minutes** to initialize on first launch. Once ready, open:
+
+        **http://[ZimaOS-IP]:8123**
+
+        Create your owner account and follow the onboarding wizard — Home Assistant will automatically discover many devices on your local network.
+
+        ---
+
+        ## USB devices — Zigbee / Z-Wave dongles
+
+        If you use a Zigbee or Z-Wave USB stick (e.g. Home Assistant SkyConnect, ConBee II, Nortek HUSBZB-1), you need to pass the device into the container.
+
+        After installation, edit the compose file and add under `home-assistant`:
+
+        ```yaml
+        devices:
+          - /dev/ttyUSB0:/dev/ttyUSB0
+        ```
+
+        Find the correct device path on your ZimaOS host:
+        ```bash
+        ls /dev/ttyUSB* /dev/ttyACM*
+        ```
+
+        Then restart the container.
+
+        ---
+
+        ## Note: No Add-ons
+
+        This is **Home Assistant Container** — the Docker deployment. It includes all integrations and automations, but does **not** support Add-ons (like the built-in Mosquitto MQTT broker, Node-RED, or ESPHome). Those require Home Assistant OS.
+
+        **Workarounds for common add-ons:**
+        - **MQTT broker** → install the separate Mosquitto app from this store
+        - **Node-RED** → install the separate Node-RED app
+        - **ESPHome** → install the separate ESPHome app
+
+        ---
+
+        ## Image tag: `stable`
+
+        Home Assistant uses the `stable` tag instead of `latest` — this is their recommended rolling-release tag, equivalent to "latest stable". It updates automatically when a new stable release is published.
+
+      de_de: |
+        ## Warum Host-Netzwerkmodus?
+
+        Home Assistant läuft mit `network_mode: host` — es bindet direkt ans Host-Netzwerk. Das ist erforderlich für:
+        - **mDNS / Bonjour** — automatische Erkennung von Chromecast, Sonos, Apple TV und anderen lokalen Geräten
+        - **DHCP-Listener** — Geräte-Tracking per IP-Adresse
+        - **Bluetooth** — BLE-Sensoren und Geräte
+
+        Home Assistant ist direkt erreichbar unter **http://[ZimaOS-IP]:8123** — kein Port-Remapping nötig.
+
+        ---
+
+        ## Zeitzone
+
+        Die `TZ`-Umgebungsvariable vor der Installation setzen.
+        Beispiele: `Europe/Berlin`, `America/New_York`, `Asia/Tokyo`
+
+        Vollständige Liste: [tz-Datenbank-Zeitzonen](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+
+        ---
+
+        ## Erster Start
+
+        Home Assistant benötigt beim ersten Start **1–3 Minuten** zur Initialisierung. Danach öffnen:
+
+        **http://[ZimaOS-IP]:8123**
+
+        Konto erstellen und dem Einrichtungsassistenten folgen — Home Assistant erkennt viele Geräte im Netzwerk automatisch.
+
+        ---
+
+        ## USB-Geräte — Zigbee / Z-Wave Dongles
+
+        Bei Verwendung eines Zigbee- oder Z-Wave-USB-Sticks (z.B. Home Assistant SkyConnect, ConBee II) muss das Gerät dem Container übergeben werden.
+
+        Nach der Installation die Compose-Datei bearbeiten und unter `home-assistant` einfügen:
+
+        ```yaml
+        devices:
+          - /dev/ttyUSB0:/dev/ttyUSB0
+        ```
+
+        Gerätepfad auf dem ZimaOS-Host finden:
+        ```bash
+        ls /dev/ttyUSB* /dev/ttyACM*
+        ```
+
+        Danach den Container neu starten.
+
+        ---
+
+        ## Hinweis: Keine Add-ons
+
+        Dies ist **Home Assistant Container** — die Docker-Bereitstellung. Sie enthält alle Integrationen und Automatisierungen, unterstützt aber **keine Add-ons** (wie Mosquitto, Node-RED oder ESPHome). Diese erfordern Home Assistant OS.
+
+        **Alternativen für häufige Add-ons:**
+        - **MQTT-Broker** → separaten Mosquitto-Container installieren
+        - **Node-RED** → separaten Node-RED-Container installieren
+        - **ESPHome** → separaten ESPHome-Container installieren
+
+        ---
+
+        ## Image-Tag: `stable`
+
+        Home Assistant verwendet den `stable`-Tag statt `latest` — das ist ihr empfohlener Rolling-Release-Tag, gleichbedeutend mit "neueste stabile Version". Er aktualisiert automatisch bei neuen Stable-Releases.
+  title:
+    en_us: Home Assistant
+  index: /
+  port_map: "8123"

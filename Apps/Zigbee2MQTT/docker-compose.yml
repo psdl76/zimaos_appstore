@@ -1,0 +1,296 @@
+name: zigbee2mqtt
+services:
+  zigbee2mqtt:
+    image: ghcr.io/koenkk/zigbee2mqtt:latest
+    deploy:
+      resources:
+        reservations:
+          memory: 256M
+    network_mode: bridge
+    ports:
+      - target: 8080
+        published: "8091"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/data
+        target: /app/data
+      - type: bind
+        source: /run/udev
+        target: /run/udev
+        read_only: true
+    environment:
+      TZ: Europe/Berlin
+      ZIGBEE2MQTT_CONFIG_MQTT_SERVER: "mqtt://192.168.1.x:1883"
+      ZIGBEE2MQTT_CONFIG_SERIAL_PORT: "tcp://192.168.1.x:6638"
+      ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: "zstack"
+      ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED: "true"
+      ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED: "true"
+      ZIGBEE2MQTT_CONFIG_FRONTEND_PORT: "8080"
+    x-casaos:
+      envs:
+        - container: TZ
+          description:
+            en_us: "Timezone — e.g. Europe/Berlin, America/New_York"
+            de_de: "Zeitzone — z.B. Europe/Berlin, America/New_York"
+        - container: ZIGBEE2MQTT_CONFIG_MQTT_SERVER
+          description:
+            en_us: "MQTT broker address — e.g. mqtt://192.168.1.100:1883 (your Mosquitto host)"
+            de_de: "MQTT-Broker-Adresse — z.B. mqtt://192.168.1.100:1883 (dein Mosquitto-Host)"
+        - container: ZIGBEE2MQTT_CONFIG_SERIAL_PORT
+          description:
+            en_us: "Zigbee adapter address — TCP: tcp://192.168.1.x:6638 | USB: /dev/ttyUSB0"
+            de_de: "Zigbee-Adapter-Adresse — TCP: tcp://192.168.1.x:6638 | USB: /dev/ttyUSB0"
+        - container: ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER
+          description:
+            en_us: "Adapter type: zstack (TI CC2652, SMLIGHT), ember (Silicon Labs EFR32), deconz (ConBee)"
+            de_de: "Adapter-Typ: zstack (TI CC2652, SMLIGHT), ember (Silicon Labs EFR32), deconz (ConBee)"
+        - container: ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED
+          description:
+            en_us: "Enable Home Assistant MQTT Discovery (true/false)"
+            de_de: "Home Assistant MQTT Discovery aktivieren (true/false)"
+      ports:
+        - container: "8080"
+          description:
+            en_us: Zigbee2MQTT web frontend — device management, pairing, logs
+            de_de: Zigbee2MQTT Web-Frontend — Geräteverwaltung, Kopplung, Logs
+      volumes:
+        - container: /app/data
+          description:
+            en_us: Zigbee2MQTT data directory — configuration, device database, coordinator backup
+            de_de: Datenverzeichnis — Konfiguration, Gerätedatenbank, Koordinator-Backup
+    container_name: zigbee2mqtt
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: zigbee2mqtt
+  author: CasaOS Team
+  category: Smart Home
+  description:
+    en_us: |
+      Zigbee2MQTT bridges your Zigbee devices to Home Assistant (and any other system) via MQTT — without any proprietary hub or cloud connection. It supports over 3000 Zigbee devices from hundreds of manufacturers.
+
+      All communication stays local: your sensors, switches, lights, and thermostats talk directly to your ZimaOS server. Zigbee2MQTT exposes every device as standard MQTT topics, which Home Assistant picks up automatically via MQTT Discovery.
+
+      Key Features:
+      - 3000+ supported Zigbee devices: IKEA, Philips Hue, Aqara, Sonoff, Tuya, and many more
+      - Works with USB dongles (CC2652, ConBee II, SkyConnect) and network coordinators (SMLIGHT SLZB series)
+      - Web frontend — pair devices, view status, manage groups and scenes
+      - Home Assistant MQTT Discovery — devices appear in HA automatically
+      - OTA firmware updates for supported Zigbee devices
+      - Touchlink factory reset, groups, scenes, and binding
+      - No cloud — fully local, works offline
+    de_de: |
+      Zigbee2MQTT verbindet deine Zigbee-Geräte mit Home Assistant (und anderen Systemen) über MQTT — ohne proprietären Hub oder Cloud-Verbindung. Es unterstützt über 3000 Zigbee-Geräte von hunderten Herstellern.
+
+      Die gesamte Kommunikation bleibt lokal: Sensoren, Schalter, Lampen und Thermostate kommunizieren direkt mit dem ZimaOS-Server. Zigbee2MQTT stellt jedes Gerät als Standard-MQTT-Topics bereit, die Home Assistant automatisch über MQTT Discovery erkennt.
+
+      Hauptfunktionen:
+      - 3000+ unterstützte Zigbee-Geräte: IKEA, Philips Hue, Aqara, Sonoff, Tuya und viele mehr
+      - Funktioniert mit USB-Dongles (CC2652, ConBee II, SkyConnect) und Netzwerk-Koordinatoren (SMLIGHT SLZB-Serie)
+      - Web-Frontend — Geräte koppeln, Status anzeigen, Gruppen und Szenen verwalten
+      - Home Assistant MQTT Discovery — Geräte erscheinen automatisch in HA
+      - OTA-Firmware-Updates für unterstützte Zigbee-Geräte
+      - Kein Cloud — vollständig lokal, funktioniert offline
+    fr_fr: |
+      Zigbee2MQTT connecte vos appareils Zigbee à Home Assistant via MQTT, sans hub propriétaire ni cloud. Plus de 3000 appareils supportés.
+    zh_cn: |
+      Zigbee2MQTT 通过 MQTT 将 Zigbee 设备连接到 Home Assistant，无需专有网关或云服务，支持 3000+ 设备。
+  developer: Koen Kanters
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/zigbee2mqtt.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Zigbee2MQTT/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Zigbee2MQTT/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Zigbee2MQTT/screenshot-3.png
+  tagline:
+    en_us: Zigbee to MQTT bridge — 3000+ devices, no cloud, full local control
+    de_de: Zigbee-zu-MQTT-Bridge — 3000+ Geräte, kein Cloud, volle lokale Kontrolle
+    fr_fr: Pont Zigbee vers MQTT — 3000+ appareils, sans cloud
+    zh_cn: Zigbee 转 MQTT 桥接 — 3000+ 设备，无云，完全本地控制
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/zigbee2mqtt.png
+  tips:
+    before_install:
+      en_us: |
+        ## Before you start
+
+        Zigbee2MQTT requires a running **MQTT broker** (Mosquitto) and a **Zigbee coordinator** (USB dongle or network adapter). Install Mosquitto first if you haven't already.
+
+        ---
+
+        ## Step 1 — Set your environment variables
+
+        Before installing, fill in two environment variables in the app settings:
+
+        **`ZIGBEE2MQTT_CONFIG_MQTT_SERVER`** — your Mosquitto address:
+        ```
+        mqtt://192.168.1.100:1883
+        ```
+        Replace `192.168.1.100` with your ZimaOS IP address.
+
+        **`ZIGBEE2MQTT_CONFIG_SERIAL_PORT`** — your Zigbee coordinator:
+
+        - **SMLIGHT SLZB-MR1 / SLZB-06 (network):**
+          ```
+          tcp://192.168.1.x:6638
+          ```
+          Replace `192.168.1.x` with your SLZB device's IP (find it in your router or the SMLIGHT admin UI).
+          Port `6638` is the default serial-over-TCP port for all SMLIGHT devices.
+
+        - **USB dongle (CC2652, SkyConnect, etc.):**
+          ```
+          /dev/ttyUSB0
+          ```
+          or `/dev/ttyACM0` — check with `ls /dev/ttyUSB* /dev/ttyACM*` on ZimaOS.
+          Also add a `devices:` section to the compose after installation.
+
+        **`ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER`** — adapter type:
+
+        | Adapter | Type |
+        |---|---|
+        | SMLIGHT SLZB-MR1, SLZB-06 | `zstack` |
+        | Home Assistant SkyConnect | `ember` |
+        | Sonoff Zigbee 3.0 USB Plus | `zstack` |
+        | ConBee II / RaspBee II | `deconz` |
+        | Silicon Labs EFR32 series | `ember` |
+
+        ---
+
+        ## Step 2 — First start
+
+        Zigbee2MQTT will start and connect to your coordinator and MQTT broker. Open the web frontend at:
+
+        **http://[ZimaOS-IP]:8091**
+
+        If the connection succeeds, you'll see the dashboard. If not, check the container logs for error messages.
+
+        ---
+
+        ## Step 3 — Connect Home Assistant
+
+        Home Assistant MQTT Discovery is enabled by default (`ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED=true`).
+
+        Once Zigbee2MQTT is running and connected to Mosquitto, go to Home Assistant:
+        **Settings → Devices & Services → MQTT**
+
+        Zigbee2MQTT will appear automatically. All your Zigbee devices will show up in HA as soon as they are paired.
+
+        ---
+
+        ## Step 4 — Pair Zigbee devices
+
+        In the Zigbee2MQTT frontend (**http://[ZimaOS-IP]:8091**):
+
+        1. Click **"Permit join (All)"** — this opens a 254-second pairing window
+        2. Put your Zigbee device into pairing mode (usually: hold the button until the LED flashes)
+        3. The device appears in the list within a few seconds
+        4. Rename it for easy identification (e.g. "Living Room Motion Sensor")
+
+        The device will immediately appear in Home Assistant via MQTT Discovery.
+
+        ---
+
+        ## USB adapter — additional setup
+
+        If you use a USB Zigbee dongle, edit the compose file after installation and add:
+
+        ```yaml
+        devices:
+          - /dev/ttyUSB0:/dev/ttyUSB0
+        ```
+        Adjust the path to match your actual device. Then restart the container.
+
+      de_de: |
+        ## Bevor du anfängst
+
+        Zigbee2MQTT benötigt einen laufenden **MQTT-Broker** (Mosquitto) und einen **Zigbee-Koordinator** (USB-Dongle oder Netzwerk-Adapter). Zuerst Mosquitto installieren, falls noch nicht geschehen.
+
+        ---
+
+        ## Schritt 1 — Umgebungsvariablen setzen
+
+        Vor der Installation zwei Umgebungsvariablen in den App-Einstellungen ausfüllen:
+
+        **`ZIGBEE2MQTT_CONFIG_MQTT_SERVER`** — Mosquitto-Adresse:
+        ```
+        mqtt://192.168.1.100:1883
+        ```
+        `192.168.1.100` durch die ZimaOS-IP-Adresse ersetzen.
+
+        **`ZIGBEE2MQTT_CONFIG_SERIAL_PORT`** — Zigbee-Koordinator:
+
+        - **SMLIGHT SLZB-MR1 / SLZB-06 (Netzwerk):**
+          ```
+          tcp://192.168.1.x:6638
+          ```
+          `192.168.1.x` durch die IP des SLZB-Geräts ersetzen (im Router oder SMLIGHT-Admin-UI zu finden).
+          Port `6638` ist der Standard-Serial-über-TCP-Port aller SMLIGHT-Geräte.
+
+        - **USB-Dongle (CC2652, SkyConnect usw.):**
+          ```
+          /dev/ttyUSB0
+          ```
+          oder `/dev/ttyACM0` — mit `ls /dev/ttyUSB* /dev/ttyACM*` auf ZimaOS prüfen.
+          Nach der Installation auch einen `devices:`-Eintrag in der Compose-Datei hinzufügen.
+
+        **`ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER`** — Adapter-Typ:
+
+        | Adapter | Typ |
+        |---|---|
+        | SMLIGHT SLZB-MR1, SLZB-06 | `zstack` |
+        | Home Assistant SkyConnect | `ember` |
+        | Sonoff Zigbee 3.0 USB Plus | `zstack` |
+        | ConBee II / RaspBee II | `deconz` |
+        | Silicon Labs EFR32-Serie | `ember` |
+
+        ---
+
+        ## Schritt 2 — Erster Start
+
+        Zigbee2MQTT startet und verbindet sich mit Koordinator und MQTT-Broker. Web-Frontend öffnen unter:
+
+        **http://[ZimaOS-IP]:8091**
+
+        Bei erfolgreicher Verbindung wird das Dashboard angezeigt. Bei Fehlern die Container-Logs prüfen.
+
+        ---
+
+        ## Schritt 3 — Home Assistant verbinden
+
+        Home Assistant MQTT Discovery ist standardmäßig aktiviert (`ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED=true`).
+
+        Sobald Zigbee2MQTT läuft und mit Mosquitto verbunden ist, in Home Assistant:
+        **Einstellungen → Geräte & Dienste → MQTT**
+
+        Zigbee2MQTT erscheint automatisch. Alle Zigbee-Geräte tauchen in HA auf, sobald sie gekoppelt sind.
+
+        ---
+
+        ## Schritt 4 — Zigbee-Geräte koppeln
+
+        Im Zigbee2MQTT-Frontend (**http://[ZimaOS-IP]:8091**):
+
+        1. **"Kopplung erlauben (Alle)"** klicken — öffnet ein 254-Sekunden-Kopplungsfenster
+        2. Zigbee-Gerät in den Kopplungsmodus versetzen (meist: Taste halten bis LED blinkt)
+        3. Gerät erscheint innerhalb von Sekunden in der Liste
+        4. Zur einfachen Identifikation umbenennen (z.B. "Wohnzimmer Bewegungsmelder")
+
+        Das Gerät erscheint sofort in Home Assistant über MQTT Discovery.
+
+        ---
+
+        ## USB-Adapter — zusätzliche Einrichtung
+
+        Bei USB-Zigbee-Dongle nach der Installation die Compose-Datei bearbeiten und hinzufügen:
+
+        ```yaml
+        devices:
+          - /dev/ttyUSB0:/dev/ttyUSB0
+        ```
+        Pfad an das tatsächliche Gerät anpassen, dann Container neu starten.
+  title:
+    en_us: Zigbee2MQTT
+  index: /
+  port_map: "8091"

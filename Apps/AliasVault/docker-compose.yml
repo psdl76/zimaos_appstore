@@ -1,0 +1,185 @@
+name: aliasvault
+services:
+  aliasvault:
+    image: ghcr.io/aliasvault/aliasvault:latest
+    deploy:
+      resources:
+        reservations:
+          memory: 512M
+    network_mode: bridge
+    ports:
+      - target: 80
+        published: "1080"
+        protocol: tcp
+      - target: 443
+        published: "1443"
+        protocol: tcp
+      - target: 25
+        published: "25"
+        protocol: tcp
+      - target: 587
+        published: "587"
+        protocol: tcp
+    restart: unless-stopped
+    environment:
+      HOSTNAME: "localhost"
+      PUBLIC_REGISTRATION_ENABLED: "true"
+      IP_LOGGING_ENABLED: "true"
+      FORCE_HTTPS_REDIRECT: "false"
+      SUPPORT_EMAIL: ""
+      PRIVATE_EMAIL_DOMAINS: ""
+      HIDDEN_PRIVATE_EMAIL_DOMAINS: ""
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/database
+        target: /database
+      - type: bind
+        source: /DATA/AppData/$AppID/logs
+        target: /logs
+      - type: bind
+        source: /DATA/AppData/$AppID/secrets
+        target: /secrets
+      - type: bind
+        source: /DATA/AppData/$AppID/certificates
+        target: /certificates
+    x-casaos:
+      envs:
+        - container: HOSTNAME
+          description:
+            en_us: Hostname for HTTPS certificate (use 'localhost' for local access only)
+            de_de: Hostname für HTTPS-Zertifikat (nutze 'localhost' für lokalen Zugriff)
+        - container: PUBLIC_REGISTRATION_ENABLED
+          description:
+            en_us: Allow new users to register (set to 'false' after creating your account)
+            de_de: Neue Nutzerregistrierung erlauben (nach Kontoerstellung auf 'false' setzen)
+        - container: FORCE_HTTPS_REDIRECT
+          description:
+            en_us: Force redirect HTTP to HTTPS (keep 'false' on NAS/ZimaOS)
+            de_de: HTTP auf HTTPS weiterleiten (auf NAS/ZimaOS auf 'false' lassen)
+        - container: PRIVATE_EMAIL_DOMAINS
+          description:
+            en_us: Comma-separated private email domains (e.g. mymail.com). Leave empty to disable.
+            de_de: Private E-Mail-Domains, kommagetrennt (z.B. mymail.com). Leer lassen zum Deaktivieren.
+        - container: SUPPORT_EMAIL
+          description:
+            en_us: Support email address shown to users (leave empty to hide)
+            de_de: Support-E-Mail-Adresse für Nutzer (leer lassen zum Ausblenden)
+        - container: IP_LOGGING_ENABLED
+          description:
+            en_us: Enable IP logging for auth attempts (last octet always anonymized)
+            de_de: IP-Protokollierung für Anmeldeversuche (letztes Oktett stets anonymisiert)
+      ports:
+        - container: "80"
+          description:
+            en_us: Web UI HTTP Port
+            de_de: Web-Oberfläche HTTP-Port
+        - container: "443"
+          description:
+            en_us: Web UI HTTPS Port
+            de_de: Web-Oberfläche HTTPS-Port
+        - container: "25"
+          description:
+            en_us: SMTP Port (for receiving alias emails)
+            de_de: SMTP-Port (für den Empfang von Alias-E-Mails)
+        - container: "587"
+          description:
+            en_us: SMTP TLS Port (STARTTLS)
+            de_de: SMTP-TLS-Port (STARTTLS)
+      volumes:
+        - container: /database
+          description:
+            en_us: AliasVault database directory
+            de_de: AliasVault Datenbankverzeichnis
+        - container: /logs
+          description:
+            en_us: AliasVault logs directory
+            de_de: AliasVault Protokollverzeichnis
+        - container: /secrets
+          description:
+            en_us: AliasVault secrets directory (encryption keys — do not delete!)
+            de_de: AliasVault Secrets-Verzeichnis (Verschlüsselungsschlüssel — nicht löschen!)
+        - container: /certificates
+          description:
+            en_us: AliasVault SSL certificates directory
+            de_de: AliasVault SSL-Zertifikatsverzeichnis
+    container_name: aliasvault
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: aliasvault
+  author: CasaOS Team
+  category: Security
+  description:
+    en_us: |
+      AliasVault is a privacy-first, open-source password and email alias manager. Create unique identities, strong passwords, and random email aliases for every website you use. Fully end-to-end encrypted, with a built-in email server and zero third-party dependencies.
+
+      This all-in-one image bundles all AliasVault services (database, API, client, admin, SMTP server, and reverse proxy) into a single container — specifically designed for NAS and home server deployments.
+
+      Key Features:
+      - End-to-end encrypted password and identity vault
+      - Built-in email alias server — receive emails directly on your server
+      - Browser extensions for Chrome, Firefox, Edge, and Safari
+      - Native iOS and Android apps
+      - Admin panel for user and system management
+      - Zero third-party dependencies
+    de_de: |
+      AliasVault ist ein datenschutzorientierter, quelloffener Passwort- und E-Mail-Alias-Manager. Erstelle einzigartige Identitäten, starke Passwörter und zufällige E-Mail-Aliase für jede Website. Vollständig Ende-zu-Ende-verschlüsselt, mit eingebautem E-Mail-Server und ohne Abhängigkeiten von Drittanbietern.
+
+      Das All-in-One-Image bündelt alle AliasVault-Dienste (Datenbank, API, Client, Admin, SMTP-Server und Reverse-Proxy) in einem einzigen Container — speziell für NAS- und Heimserver-Deployments entwickelt.
+
+      Hauptfunktionen:
+      - Ende-zu-Ende-verschlüsselter Passwort- und Identitätstresor
+      - Integrierter E-Mail-Alias-Server — erhalte E-Mails direkt auf deinem Server
+      - Browser-Erweiterungen für Chrome, Firefox, Edge und Safari
+      - Native iOS- und Android-Apps
+      - Admin-Panel für Benutzer- und Systemverwaltung
+      - Keine Drittanbieter-Abhängigkeiten
+    fr_fr: |
+      AliasVault est un gestionnaire de mots de passe et d'alias e-mail open-source axé sur la confidentialité. Créez des identités uniques, des mots de passe forts et des alias e-mail aléatoires pour chaque site web. Entièrement chiffré de bout en bout, avec un serveur e-mail intégré et zéro dépendance tierce.
+    es_es: |
+      AliasVault es un gestor de contraseñas y alias de correo electrónico de código abierto centrado en la privacidad. Crea identidades únicas, contraseñas seguras y alias de correo aleatorios para cada sitio web. Totalmente cifrado de extremo a extremo, con servidor de correo integrado y sin dependencias de terceros.
+    ru_ru: |
+      AliasVault — менеджер паролей и псевдонимов электронной почты с открытым исходным кодом, ориентированный на конфиденциальность. Создавайте уникальные личности, надёжные пароли и случайные псевдонимы для каждого сайта. Полное сквозное шифрование, встроенный почтовый сервер, никаких сторонних зависимостей.
+    zh_cn: |
+      AliasVault 是一款注重隐私的开源密码和电子邮件别名管理器。为每个网站创建独特身份、强密码和随机电子邮件别名。完全端对端加密，内置电子邮件服务器，零第三方依赖。
+  developer: AliasVault
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/aliasvault.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AliasVault/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AliasVault/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AliasVault/screenshot-3.png
+  tagline:
+    en_us: Privacy-first password & email alias manager
+    de_de: Datenschutzorientierter Passwort- & E-Mail-Alias-Manager
+    fr_fr: Gestionnaire de mots de passe et d'alias e-mail axé sur la confidentialité
+    es_es: Gestor de contraseñas y alias de correo centrado en la privacidad
+    ru_ru: Менеджер паролей и псевдонимов с акцентом на конфиденциальность
+    zh_cn: 注重隐私的密码和电子邮件别名管理器
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/aliasvault.png
+  tips:
+    before_install:
+      en_us: |
+        **First-time setup:**
+        1. Open the web UI at http://[ZimaOS-IP]:1080 after installation
+        2. Register your account — the first account becomes the administrator
+        3. After setup, set PUBLIC_REGISTRATION_ENABLED to 'false' to prevent others from registering
+
+        **Email aliasing (optional):**
+        To use your own domain for email aliases, point your domain's MX record to your ZimaOS IP and set PRIVATE_EMAIL_DOMAINS to your domain name.
+
+        **Ports 25 & 587** are only needed for the email aliasing feature. If you don't need it, these ports can remain unused.
+      de_de: |
+        **Ersteinrichtung:**
+        1. Öffne die Web-Oberfläche unter http://[ZimaOS-IP]:1080 nach der Installation
+        2. Registriere dein Konto — das erste Konto wird zum Administrator
+        3. Nach der Einrichtung setze PUBLIC_REGISTRATION_ENABLED auf 'false'
+
+        **E-Mail-Aliasing (optional):**
+        Um deine eigene Domain für E-Mail-Aliase zu verwenden, weise den MX-Eintrag deiner Domain auf die ZimaOS-IP und setze PRIVATE_EMAIL_DOMAINS auf deinen Domainnamen.
+
+        **Ports 25 & 587** werden nur für das E-Mail-Aliasing benötigt. Falls nicht benötigt, können diese Ports ungenutzt bleiben.
+  title:
+    en_us: AliasVault
+  index: /
+  port_map: "1080"

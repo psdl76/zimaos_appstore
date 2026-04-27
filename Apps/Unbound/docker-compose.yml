@@ -1,0 +1,224 @@
+name: unbound
+services:
+  unbound:
+    image: klutchell/unbound:latest
+    deploy:
+      resources:
+        reservations:
+          memory: 32M
+    network_mode: bridge
+    ports:
+      - target: 53
+        published: "5335"
+        protocol: udp
+      - target: 53
+        published: "5335"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /etc/unbound/custom.conf.d
+    x-casaos:
+      ports:
+        - container: "53"
+          description:
+            en_us: DNS port — mapped to host port 5335 to avoid conflicts with system DNS and AdGuard Home
+            de_de: DNS-Port — auf Host-Port 5335 gemappt, um Konflikte mit System-DNS und AdGuard Home zu vermeiden
+      volumes:
+        - container: /etc/unbound/custom.conf.d
+          description:
+            en_us: Custom Unbound configuration directory — place additional .conf files here to override defaults
+            de_de: Benutzerdefiniertes Konfigurationsverzeichnis — zusätzliche .conf-Dateien hier ablegen
+    container_name: unbound
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: unbound
+  author: CasaOS Team
+  category: Network
+  description:
+    en_us: |
+      Unbound is a validating, recursive, and caching DNS resolver. Instead of forwarding your DNS queries to a third-party provider like Cloudflare or Google, Unbound resolves them itself by querying the authoritative root DNS servers directly — keeping your DNS lookups private and independent.
+
+      This setup is designed to work as the upstream DNS resolver for AdGuard Home, combining ad and tracker blocking with full DNS privacy:
+
+      Devices → AdGuard Home (filtering, port 53) → Unbound (recursive resolver, port 5335) → Root servers
+
+      Key Features:
+      - Recursive resolution — no dependency on upstream providers (Cloudflare, Google, etc.)
+      - DNSSEC validation — cryptographically verifies DNS responses against tampering
+      - DNS cache — faster repeated lookups, reduced latency
+      - Prefetching — refreshes popular entries before they expire
+      - Minimal footprint — typically uses less than 32MB of RAM
+      - No web interface — configured via config files, runs silently in the background
+    de_de: |
+      Unbound ist ein validierender, rekursiver und cachender DNS-Resolver. Anstatt DNS-Anfragen an Drittanbieter wie Cloudflare oder Google weiterzuleiten, löst Unbound sie selbst auf, indem es die autoritativen Root-DNS-Server direkt befragt.
+
+      Dieses Setup ist als Upstream-DNS-Resolver für AdGuard Home konzipiert:
+
+      Geräte → AdGuard Home (Filterung, Port 53) → Unbound (Resolver, Port 5335) → Root-Server
+
+      Hauptfunktionen:
+      - Rekursive Auflösung — keine Abhängigkeit von externen Anbietern
+      - DNSSEC-Validierung — kryptografische Verifikation von DNS-Antworten
+      - DNS-Cache — schnellere Wiederholungsabfragen, geringere Latenz
+      - Prefetching — aktualisiert beliebte Einträge vor dem Ablauf
+      - Minimaler Speicherbedarf — typischerweise unter 32 MB RAM
+  developer: NLnet Labs
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/unbound.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Unbound/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Unbound/screenshot-2.png
+  tagline:
+    en_us: Validating, recursive, caching DNS resolver — privacy-first upstream for AdGuard Home
+    de_de: Validierender, rekursiver DNS-Resolver — datenschutzkonformer Upstream für AdGuard Home
+    fr_fr: Résolveur DNS récursif et validant — upstream privacy-first pour AdGuard Home
+    ru_ru: Рекурсивный DNS-резолвер с валидацией — приватный upstream для AdGuard Home
+    zh_cn: 验证型递归缓存 DNS 解析器 — AdGuard Home 的隐私优先上游
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/unbound.png
+  tips:
+    before_install:
+      en_us: |
+        ## What Unbound does
+
+        Unbound resolves DNS queries by contacting the authoritative root servers directly — no third-party DNS provider involved. Combined with AdGuard Home, this gives you both ad blocking and full DNS privacy.
+
+        ---
+
+        ## Step 1 — Install and start Unbound
+
+        Install this app. It listens on port **5335** (UDP + TCP) to avoid conflicts with AdGuard Home's port 53.
+        No additional configuration is needed — Unbound works out of the box with sensible defaults.
+
+        ---
+
+        ## Step 2 — Configure AdGuard Home to use Unbound as upstream
+
+        In the AdGuard Home WebUI, go to **Settings → DNS Settings → Upstream DNS servers** and replace the existing entries with:
+
+        ```
+        127.0.0.1:5335
+        ```
+
+        > If AdGuard Home and Unbound are running on the same ZimaOS host, `127.0.0.1:5335` works directly.
+        > If they are on different machines, use the ZimaOS IP: `192.168.x.x:5335`
+
+        Under **DNS server configuration**, set the upstream mode to **"Parallel requests"** for best performance.
+
+        Click **"Test upstreams"** to verify the connection, then save.
+
+        ---
+
+        ## Step 3 — Verify it works
+
+        In AdGuard Home under **Query Log**, you should see queries being resolved. You can also test DNSSEC validation:
+
+        ```
+        dig sigfail.verteiltesysteme.net @127.0.0.1 -p 5335
+        ```
+        Expected result: `SERVFAIL` — meaning DNSSEC validation is working and rejecting a tampered response.
+
+        ```
+        dig sigok.verteiltesysteme.net @127.0.0.1 -p 5335
+        ```
+        Expected result: `NOERROR` — valid DNSSEC response resolved successfully.
+
+        ---
+
+        ## Resilience: Running a second Unbound instance
+
+        Unbound and AdGuard Home share the same server, so a server outage takes down both regardless.
+        However, you can protect against **individual process crashes** by running a second Unbound instance:
+
+        1. Install this app a second time from the app store
+        2. Before confirming, change the published DNS port from `5335` to `5336`
+        3. In AdGuard Home → DNS Settings → Upstream DNS servers, add both:
+           ```
+           127.0.0.1:5335
+           127.0.0.1:5336
+           ```
+        4. Set upstream mode to **"Parallel requests"**
+
+        AdGuard Home now queries both Unbound instances simultaneously and uses whichever responds first.
+        If one Unbound process crashes, the other handles all requests automatically — no interruption.
+
+        **For resilience against full server failure**, configure your router with a secondary DNS:
+        - Primary DNS: `[ZimaOS-IP]` (AdGuard Home)
+        - Secondary DNS: `9.9.9.9` (Quad9 — privacy-respecting fallback)
+
+        If ZimaOS goes offline, devices fall back to Quad9 automatically — you lose ad blocking, but the network stays up.
+
+      de_de: |
+        ## Was Unbound macht
+
+        Unbound löst DNS-Anfragen auf, indem es die autoritativen Root-Server direkt kontaktiert — kein Drittanbieter involviert. Kombiniert mit AdGuard Home erhältst du Werbeblocker und vollständige DNS-Privatsphäre.
+
+        ---
+
+        ## Schritt 1 — Unbound installieren und starten
+
+        Installiere die App. Unbound hört auf Port **5335** (UDP + TCP), um Konflikte mit AdGuard Homes Port 53 zu vermeiden.
+        Keine weitere Konfiguration nötig — Unbound funktioniert sofort mit sinnvollen Standardeinstellungen.
+
+        ---
+
+        ## Schritt 2 — AdGuard Home als Upstream konfigurieren
+
+        In der AdGuard Home WebUI unter **Einstellungen → DNS-Einstellungen → Upstream-DNS-Server** die bestehenden Einträge ersetzen durch:
+
+        ```
+        127.0.0.1:5335
+        ```
+
+        > Laufen AdGuard Home und Unbound auf demselben ZimaOS-Host, funktioniert `127.0.0.1:5335` direkt.
+        > Bei verschiedenen Maschinen die ZimaOS-IP verwenden: `192.168.x.x:5335`
+
+        Upstream-Modus auf **"Parallele Anfragen"** setzen für beste Performance.
+        Auf **"Upstreams testen"** klicken zur Verifikation, dann speichern.
+
+        ---
+
+        ## Schritt 3 — Funktionalität prüfen
+
+        Im AdGuard Home Abfrage-Log sollten Anfragen erscheinen. DNSSEC-Validierung testen:
+
+        ```
+        dig sigfail.verteiltesysteme.net @127.0.0.1 -p 5335
+        ```
+        Erwartetes Ergebnis: `SERVFAIL` — DNSSEC-Validierung funktioniert.
+
+        ```
+        dig sigok.verteiltesysteme.net @127.0.0.1 -p 5335
+        ```
+        Erwartetes Ergebnis: `NOERROR` — gültige DNSSEC-Antwort.
+
+        ---
+
+        ## Resilienz: Zweite Unbound-Instanz betreiben
+
+        Da Unbound und AdGuard Home denselben Server teilen, sind beide bei einem Server-Ausfall betroffen.
+        Gegen **individuelle Prozess-Abstürze** kannst du eine zweite Instanz betreiben:
+
+        1. Diese App ein zweites Mal aus dem App Store installieren
+        2. Vor der Bestätigung den veröffentlichten DNS-Port von `5335` auf `5336` ändern
+        3. In AdGuard Home → DNS-Einstellungen → Upstream-DNS-Server beide eintragen:
+           ```
+           127.0.0.1:5335
+           127.0.0.1:5336
+           ```
+        4. Upstream-Modus auf **"Parallele Anfragen"** setzen
+
+        Bei Absturz einer Instanz übernimmt die andere automatisch — ohne Unterbrechung.
+
+        **Gegen vollständigen Server-Ausfall** den Router konfigurieren:
+        - Primär-DNS: `[ZimaOS-IP]` (AdGuard Home)
+        - Sekundär-DNS: `9.9.9.9` (Quad9 — datenschutzkonformer Fallback)
+
+        Geht ZimaOS offline, nutzen Geräte automatisch Quad9 — Werbeblocker fällt weg, aber das Netz bleibt oben.
+  title:
+    en_us: Unbound
+  index: /
+  port_map: "5335"
