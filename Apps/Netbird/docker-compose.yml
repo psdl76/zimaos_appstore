@@ -71,22 +71,6 @@ services:
             encryptionKey: "${ENCRYPTION_KEY}"
         ENDCONFIG
 
-        echo "[init] Writing dashboard.env..."
-        cat > "${CONFIG_DIR}/dashboard.env" << ENDDASH
-        NETBIRD_MGMT_API_ENDPOINT=https://${NETBIRD_DOMAIN}
-        NETBIRD_MGMT_GRPC_API_ENDPOINT=https://${NETBIRD_DOMAIN}
-        AUTH_AUDIENCE=netbird-dashboard
-        AUTH_CLIENT_ID=netbird-dashboard
-        AUTH_CLIENT_SECRET=
-        AUTH_AUTHORITY=https://${NETBIRD_DOMAIN}/oauth2
-        USE_AUTH0=false
-        AUTH_SUPPORTED_SCOPES=openid profile email groups
-        AUTH_REDIRECT_URI=/nb-auth
-        AUTH_SILENT_REDIRECT_URI=/nb-silent-auth
-        NGINX_SSL_PORT=443
-        LETSENCRYPT_DOMAIN=none
-        ENDDASH
-
         echo "[init] Writing traefik-static.yaml..."
         cat > "${CONFIG_DIR}/traefik-static.yaml" << ENDSTATIC
         log:
@@ -193,22 +177,6 @@ services:
                   - url: "h2c://netbird-server:80"
         ENDDYNAMIC
 
-        echo "[init] Writing proxy.env (placeholder — will be updated by netbird-setup)..."
-        cat > "${CONFIG_DIR}/proxy.env" << ENDPROXY
-        NB_PROXY_TOKEN=placeholder
-        NB_PROXY_MANAGEMENT_ADDRESS=http://netbird-server:80
-        NB_PROXY_ALLOW_INSECURE=true
-        NB_PROXY_DOMAIN=${NETBIRD_DOMAIN}
-        NB_PROXY_ADDRESS=:8443
-        NB_PROXY_CERTIFICATE_DIRECTORY=/certs
-        NB_PROXY_ACME_CERTIFICATES=true
-        NB_PROXY_ACME_CHALLENGE_TYPE=tls-alpn-01
-        NB_PROXY_FORWARDED_PROTO=https
-        NB_PROXY_PROXY_PROTOCOL=true
-        NB_PROXY_TRUSTED_PROXIES=172.30.0.10
-        NB_PROXY_DEBUG_LOGS=false
-        ENDPROXY
-
         echo "[init] All configuration files generated successfully."
     x-casaos:
       envs:
@@ -285,8 +253,19 @@ services:
     depends_on:
       netbird-init:
         condition: service_completed_successfully
-    env_file:
-      - /DATA/AppData/$AppID/config/dashboard.env
+    environment:
+      NETBIRD_MGMT_API_ENDPOINT: "https://${NETBIRD_DOMAIN}"
+      NETBIRD_MGMT_GRPC_API_ENDPOINT: "https://${NETBIRD_DOMAIN}"
+      AUTH_AUDIENCE: "netbird-dashboard"
+      AUTH_CLIENT_ID: "netbird-dashboard"
+      AUTH_CLIENT_SECRET: ""
+      AUTH_AUTHORITY: "https://${NETBIRD_DOMAIN}/oauth2"
+      USE_AUTH0: "false"
+      AUTH_SUPPORTED_SCOPES: "openid profile email groups"
+      AUTH_REDIRECT_URI: "/nb-auth"
+      AUTH_SILENT_REDIRECT_URI: "/nb-silent-auth"
+      NGINX_SSL_PORT: "443"
+      LETSENCRYPT_DOMAIN: "none"
     logging:
       driver: json-file
       options:
@@ -401,9 +380,9 @@ services:
         set -e
         CONFIG_DIR=/netbird-config
 
-        # Idempotency: skip if proxy.env already has a real (non-placeholder) token
-        if grep -q "^NB_PROXY_TOKEN=[a-zA-Z0-9]" "${CONFIG_DIR}/proxy.env" 2>/dev/null \
-           && ! grep -q "^NB_PROXY_TOKEN=placeholder" "${CONFIG_DIR}/proxy.env" 2>/dev/null; then
+        # Idempotency: skip if proxy-secrets.env already has a real token
+        if [ -f "${CONFIG_DIR}/proxy-secrets.env" ] \
+           && grep -q "^NB_PROXY_TOKEN=[a-zA-Z0-9]" "${CONFIG_DIR}/proxy-secrets.env" 2>/dev/null; then
           echo "[setup] Proxy already configured — skipping setup."
           exit 0
         fi
@@ -460,25 +439,11 @@ services:
         fi
         echo "[setup] CrowdSec bouncer registered."
 
-        echo "[setup] Writing final proxy.env with real credentials..."
-        cat > "${CONFIG_DIR}/proxy.env" << ENDPROXY
-        NB_PROXY_TOKEN=${PROXY_TOKEN}
-        NB_PROXY_MANAGEMENT_ADDRESS=http://netbird-server:80
-        NB_PROXY_ALLOW_INSECURE=true
-        NB_PROXY_DOMAIN=${NETBIRD_DOMAIN}
-        NB_PROXY_ADDRESS=:8443
-        NB_PROXY_CERTIFICATE_DIRECTORY=/certs
-        NB_PROXY_ACME_CERTIFICATES=true
-        NB_PROXY_ACME_CHALLENGE_TYPE=tls-alpn-01
-        NB_PROXY_FORWARDED_PROTO=https
-        NB_PROXY_PROXY_PROTOCOL=true
-        NB_PROXY_TRUSTED_PROXIES=172.30.0.10
-        NB_PROXY_DEBUG_LOGS=false
-        NB_PROXY_CROWDSEC_API_URL=http://crowdsec:8080
-        NB_PROXY_CROWDSEC_API_KEY=${CROWDSEC_KEY}
-        ENDPROXY
+        echo "[setup] Writing proxy-secrets.env with generated credentials..."
+        printf 'NB_PROXY_TOKEN=%s\nNB_PROXY_CROWDSEC_API_KEY=%s\n' \
+          "${PROXY_TOKEN}" "${CROWDSEC_KEY}" > "${CONFIG_DIR}/proxy-secrets.env"
 
-        echo "[setup] ✓ Setup complete. Proxy service will now start."
+        echo "[setup] Setup complete. Proxy service will now start."
 
   # ═══════════════════════════════════════════════════════════════════
   # PHASE 3 — Proxy: NetBird proxy service
@@ -495,13 +460,35 @@ services:
     depends_on:
       netbird-setup:
         condition: service_completed_successfully
+    entrypoint: ["/busybox/sh", "-c"]
+    command:
+      - |
+        if [ -f /config/proxy-secrets.env ]; then
+          . /config/proxy-secrets.env
+        fi
+        exec /go/bin/netbird-proxy
     ports:
       - target: 51820
         published: "51820"
         protocol: udp
-    env_file:
-      - /DATA/AppData/$AppID/config/proxy.env
+    environment:
+      NB_PROXY_MANAGEMENT_ADDRESS: "http://netbird-server:80"
+      NB_PROXY_ALLOW_INSECURE: "true"
+      NB_PROXY_DOMAIN: "${NETBIRD_DOMAIN}"
+      NB_PROXY_ADDRESS: ":8443"
+      NB_PROXY_CERTIFICATE_DIRECTORY: "/certs"
+      NB_PROXY_ACME_CERTIFICATES: "true"
+      NB_PROXY_ACME_CHALLENGE_TYPE: "tls-alpn-01"
+      NB_PROXY_FORWARDED_PROTO: "https"
+      NB_PROXY_PROXY_PROTOCOL: "true"
+      NB_PROXY_TRUSTED_PROXIES: "172.30.0.10"
+      NB_PROXY_DEBUG_LOGS: "false"
+      NB_PROXY_CROWDSEC_API_URL: "http://crowdsec:8080"
     volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /config
+        read_only: true
       - type: bind
         source: /DATA/AppData/$AppID/proxy/certs
         target: /certs
@@ -517,6 +504,10 @@ services:
             en_us: WireGuard/UDP — for P2P proxy connections (only needed if using proxy resources)
             de_de: WireGuard/UDP — für P2P-Proxy-Verbindungen (nur bei Proxy-Ressourcen nötig)
       volumes:
+        - container: /config
+          description:
+            en_us: Shared config directory (contains proxy-secrets.env written by setup container)
+            de_de: Gemeinsames Konfigurationsverzeichnis (enthält proxy-secrets.env vom Setup-Container)
         - container: /certs
           description:
             en_us: Proxy TLS certificates (managed automatically via ACME)
