@@ -226,7 +226,19 @@ services:
       options:
         max-size: 500m
         max-file: "2"
+    environment:
+      NETBIRD_DOMAIN: ""
+      TRAEFIK_ACME_EMAIL: ""
     x-casaos:
+      envs:
+        - container: NETBIRD_DOMAIN
+          description:
+            en_us: "Your public domain for NetBird (e.g. netbird.yourdomain.com) — DNS must point to this machine BEFORE install"
+            de_de: "Deine öffentliche Domain (z.B. netbird.deinedomain.de) — DNS VOR der Installation konfigurieren"
+        - container: TRAEFIK_ACME_EMAIL
+          description:
+            en_us: "Email address for Let's Encrypt SSL certificate notifications"
+            de_de: "E-Mail-Adresse für Let's Encrypt SSL-Zertifikat-Benachrichtigungen"
       ports:
         - container: "80"
           description:
