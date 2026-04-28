@@ -46,7 +46,7 @@ x-casaos:
     - arm
   main: home-assistant
   author: CasaOS Team
-  category: Smart Home
+  category: psdl76
   description:
     en_us: |
       Home Assistant is the leading open-source home automation platform. It integrates with thousands of devices and services — smart lights, thermostats, sensors, cameras, media players, and more — giving you complete local control without depending on any cloud.

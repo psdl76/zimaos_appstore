@@ -38,7 +38,7 @@ x-casaos:
     - arm
   main: unbound
   author: CasaOS Team
-  category: Network
+  category: psdl76
   description:
     en_us: |
       Unbound is a validating, recursive, and caching DNS resolver. Instead of forwarding your DNS queries to a third-party provider like Cloudflare or Google, Unbound resolves them itself by querying the authoritative root DNS servers directly — keeping your DNS lookups private and independent.

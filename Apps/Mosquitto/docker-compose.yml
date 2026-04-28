@@ -98,7 +98,7 @@ x-casaos:
     - "386"
   main: mosquitto
   author: CasaOS Team
-  category: Smart Home
+  category: psdl76
   description:
     en_us: |
       Eclipse Mosquitto is a lightweight, open-source MQTT message broker. MQTT is the standard protocol for IoT and smart home devices — it connects sensors, actuators, and automation systems through a publish/subscribe messaging pattern.

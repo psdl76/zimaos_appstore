@@ -109,7 +109,7 @@ x-casaos:
     - arm64
   main: aliasvault
   author: CasaOS Team
-  category: Security
+  category: psdl76
   description:
     en_us: |
       AliasVault is a privacy-first, open-source password and email alias manager. Create unique identities, strong passwords, and random email aliases for every website you use. Fully end-to-end encrypted, with a built-in email server and zero third-party dependencies.

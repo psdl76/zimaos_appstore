@@ -68,7 +68,7 @@ x-casaos:
     - arm
   main: zigbee2mqtt
   author: CasaOS Team
-  category: Smart Home
+  category: psdl76
   description:
     en_us: |
       Zigbee2MQTT bridges your Zigbee devices to Home Assistant (and any other system) via MQTT — without any proprietary hub or cloud connection. It supports over 3000 Zigbee devices from hundreds of manufacturers.

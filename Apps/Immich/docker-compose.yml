@@ -142,7 +142,7 @@ x-casaos:
   main: immich-server
   store_app_id: immich
   author: CasaOS Team
-  category: Photography
+  category: psdl76
   description:
     en_us: |
       Immich is a high-performance, self-hosted photo and video backup solution. It looks and feels like Google Photos — with automatic mobile backup, shared albums, facial recognition, and AI-powered smart search — but runs entirely on your own hardware with no subscription or cloud dependency.

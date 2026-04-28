@@ -35,7 +35,7 @@ x-casaos:
     - "386"
   main: go2rtc
   author: CasaOS Team
-  category: Smart Home
+  category: psdl76
   description:
     en_us: |
       go2rtc is a universal camera streaming application that bridges dozens of video protocols and formats with near-zero latency. It acts as a central hub for all your cameras — converting, proxying, and re-streaming to whatever format your clients need.

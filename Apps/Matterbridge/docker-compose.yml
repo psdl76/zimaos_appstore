@@ -40,7 +40,7 @@ x-casaos:
     - arm
   main: matterbridge
   author: CasaOS Team
-  category: Smart Home
+  category: psdl76
   description:
     en_us: |
       Matterbridge is a Matter bridge that connects your existing smart home devices to any Matter controller — Apple Home, Google Home, Amazon Alexa, SmartThings, and Home Assistant — without replacing your current setup.

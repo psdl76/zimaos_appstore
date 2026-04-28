@@ -93,7 +93,7 @@ x-casaos:
   main: nextcloud-aio-mastercontainer
   store_app_id: nextcloud-aio
   author: CasaOS Team
-  category: Cloud
+  category: psdl76
   description:
     en_us: |
       Nextcloud All-in-One (AIO) is the officially recommended way to deploy Nextcloud. The single mastercontainer automatically manages all required services — Nextcloud itself, a database, Redis cache, a reverse proxy, and optionally Collabora Online, Talk, and Fulltextsearch — without any manual configuration.

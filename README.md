@@ -7,7 +7,7 @@ A custom app store for [ZimaOS](https://www.zimaspace.com/) / [CasaOS](https://c
 In ZimaOS, open the App Store → ⚙️ → Custom App Store and enter:
 
 ```
-https://github.com/psdl76/zimaos_appstore/releases/latest/download/appstore.tar.gz
+https://github.com/psdl76/zimaos_appstore/releases/latest/download/appstore.zip
 ```
 
 ---

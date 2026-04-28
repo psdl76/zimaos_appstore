@@ -537,7 +537,7 @@ x-casaos:
   main: traefik
   store_app_id: netbird
   author: CasaOS Team
-  category: Network
+  category: psdl76
   description:
     en_us: |
       NetBird is an open-source, WireGuard-based network overlay that connects your devices into a secure private network — without opening firewall ports or configuring complex network infrastructure. Peers connect directly or via relay, always encrypted end-to-end.
