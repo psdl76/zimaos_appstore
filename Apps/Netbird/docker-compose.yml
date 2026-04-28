@@ -1,4 +1,4 @@
-name: netbird
+name: netbird-server
 services:
 
   # ═══════════════════════════════════════════════════════════════════
@@ -538,7 +538,7 @@ x-casaos:
     - amd64
     - arm64
   main: traefik
-  store_app_id: netbird
+  store_app_id: netbird-server
   author: CasaOS Team
   category: psdl76
   description:
