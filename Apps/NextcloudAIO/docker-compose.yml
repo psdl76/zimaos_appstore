@@ -25,7 +25,7 @@ services:
       - /dev/dri:/dev/dri
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - /DATA/AppData/$AppID/master-config:/mnt/docker-aio-config
     environment:
       NEXTCLOUD_DATADIR: /DATA/AppData/nextcloud-aio/ncdata
       NEXTCLOUD_UPLOAD_LIMIT: 16G
@@ -78,9 +78,6 @@ services:
             en_us: Docker socket — required for AIO to manage Nextcloud containers
             de_de: Docker-Socket — erforderlich damit AIO die Nextcloud-Container verwalten kann
     container_name: nextcloud-aio-mastercontainer
-volumes:
-  nextcloud_aio_mastercontainer:
-    name: nextcloud_aio_mastercontainer
 x-casaos:
   architectures:
     - amd64
