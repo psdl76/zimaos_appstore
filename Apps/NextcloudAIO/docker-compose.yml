@@ -125,11 +125,9 @@ x-casaos:
   developer: Nextcloud GmbH
   icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-3.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-4.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/NextcloudAIO/screenshot-5.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Nextcloud/screenshot-3.png
   tagline:
     en_us: The officially recommended, self-hosted Nextcloud deployment
     de_de: Die offiziell empfohlene, selbst gehostete Nextcloud-Bereitstellung
