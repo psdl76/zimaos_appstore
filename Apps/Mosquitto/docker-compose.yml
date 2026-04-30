@@ -4,9 +4,7 @@ services:
     image: eclipse-mosquitto:latest
     restart: "no"
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /mosquitto/config
+      - /DATA/AppData/$AppID/config:/mosquitto/config
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -57,15 +55,9 @@ services:
         protocol: tcp
     restart: unless-stopped
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /mosquitto/config
-      - type: bind
-        source: /DATA/AppData/$AppID/data
-        target: /mosquitto/data
-      - type: bind
-        source: /DATA/AppData/$AppID/log
-        target: /mosquitto/log
+      - /DATA/AppData/$AppID/config:/mosquitto/config
+      - /DATA/AppData/$AppID/data:/mosquitto/data
+      - /DATA/AppData/$AppID/log:/mosquitto/log
     x-casaos:
       ports:
         - container: "1883"

@@ -30,18 +30,10 @@ services:
       PRIVATE_EMAIL_DOMAINS: ""
       HIDDEN_PRIVATE_EMAIL_DOMAINS: ""
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/database
-        target: /database
-      - type: bind
-        source: /DATA/AppData/$AppID/logs
-        target: /logs
-      - type: bind
-        source: /DATA/AppData/$AppID/secrets
-        target: /secrets
-      - type: bind
-        source: /DATA/AppData/$AppID/certificates
-        target: /certificates
+      - /DATA/AppData/$AppID/database:/database
+      - /DATA/AppData/$AppID/logs:/logs
+      - /DATA/AppData/$AppID/secrets:/secrets
+      - /DATA/AppData/$AppID/certificates:/certificates
     x-casaos:
       envs:
         - container: HOSTNAME

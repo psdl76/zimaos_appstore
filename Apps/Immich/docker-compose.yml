@@ -18,13 +18,8 @@ services:
         protocol: tcp
     restart: always
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/library
-        target: /data
-      - type: bind
-        source: /etc/localtime
-        target: /etc/localtime
-        read_only: true
+      - /DATA/AppData/$AppID/library:/data
+      - /etc/localtime:/etc/localtime:ro
     environment:
       DB_USERNAME: immich
       DB_PASSWORD: immich_db_password
@@ -71,12 +66,8 @@ services:
       - /dev/dri:/dev/dri
     restart: always
     volumes:
-      - type: volume
-        source: immich_model_cache
-        target: /cache
-      - type: bind
-        source: /dev/bus/usb
-        target: /dev/bus/usb
+      - immich_model_cache:/cache
+      - /dev/bus/usb:/dev/bus/usb
     environment:
       DB_USERNAME: immich
       DB_PASSWORD: immich_db_password
@@ -119,9 +110,7 @@ services:
       # Uncomment if your database volume is on a spinning HDD (not SSD):
       # DB_STORAGE_TYPE: 'HDD'
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/postgres
-        target: /var/lib/postgresql/data
+      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     healthcheck:
       disable: false
     x-casaos:

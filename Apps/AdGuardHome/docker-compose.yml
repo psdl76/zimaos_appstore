@@ -34,12 +34,8 @@ services:
         protocol: udp
     restart: unless-stopped
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/work
-        target: /opt/adguardhome/work
-      - type: bind
-        source: /DATA/AppData/$AppID/conf
-        target: /opt/adguardhome/conf
+      - /DATA/AppData/$AppID/work:/opt/adguardhome/work
+      - /DATA/AppData/$AppID/conf:/opt/adguardhome/conf
     x-casaos:
       ports:
         - container: "3000"

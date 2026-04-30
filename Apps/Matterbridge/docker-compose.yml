@@ -9,15 +9,9 @@ services:
     network_mode: host
     restart: unless-stopped
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/Matterbridge
-        target: /root/Matterbridge
-      - type: bind
-        source: /DATA/AppData/$AppID/.matterbridge
-        target: /root/.matterbridge
-      - type: bind
-        source: /DATA/AppData/$AppID/.mattercert
-        target: /root/.mattercert
+      - /DATA/AppData/$AppID/Matterbridge:/root/Matterbridge
+      - /DATA/AppData/$AppID/.matterbridge:/root/.matterbridge
+      - /DATA/AppData/$AppID/.mattercert:/root/.mattercert
     x-casaos:
       volumes:
         - container: /root/Matterbridge

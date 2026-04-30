@@ -16,9 +16,7 @@ services:
         protocol: tcp
     restart: unless-stopped
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /etc/unbound/custom.conf.d
+      - /DATA/AppData/$AppID/config:/etc/unbound/custom.conf.d
     x-casaos:
       ports:
         - container: "53"

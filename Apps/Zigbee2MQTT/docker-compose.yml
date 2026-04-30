@@ -13,13 +13,8 @@ services:
         protocol: tcp
     restart: unless-stopped
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/data
-        target: /app/data
-      - type: bind
-        source: /run/udev
-        target: /run/udev
-        read_only: true
+      - /DATA/AppData/$AppID/data:/app/data
+      - /run/udev:/run/udev:ro
     environment:
       TZ: Europe/Berlin
       ZIGBEE2MQTT_CONFIG_MQTT_SERVER: "mqtt://192.168.1.x:1883"

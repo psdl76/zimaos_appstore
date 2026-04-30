@@ -15,9 +15,7 @@ services:
       NETBIRD_DOMAIN: ""
       TRAEFIK_ACME_EMAIL: ""
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /netbird-config
+      - /DATA/AppData/$AppID/config:/netbird-config
     command:
       - sh
       - -c
@@ -214,13 +212,8 @@ services:
         published: "443"
         protocol: tcp
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/traefik/letsencrypt
-        target: /letsencrypt
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /netbird-config
-        read_only: true
+      - /DATA/AppData/$AppID/traefik/letsencrypt:/letsencrypt
+      - /DATA/AppData/$AppID/config:/netbird-config:ro
     logging:
       driver: json-file
       options:
@@ -301,13 +294,8 @@ services:
         published: "3478"
         protocol: udp
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/data
-        target: /var/lib/netbird
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /netbird-config
-        read_only: true
+      - /DATA/AppData/$AppID/data:/var/lib/netbird
+      - /DATA/AppData/$AppID/config:/netbird-config:ro
     command: ["--config", "/netbird-config/config.yaml"]
     logging:
       driver: json-file
@@ -342,12 +330,8 @@ services:
     environment:
       COLLECTIONS: crowdsecurity/linux
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/crowdsec/config
-        target: /etc/crowdsec
-      - type: bind
-        source: /DATA/AppData/$AppID/crowdsec/data
-        target: /var/lib/crowdsec/data
+      - /DATA/AppData/$AppID/crowdsec/config:/etc/crowdsec
+      - /DATA/AppData/$AppID/crowdsec/data:/var/lib/crowdsec/data
     healthcheck:
       test: ["CMD", "cscli", "lapi", "status"]
       interval: 10s
@@ -378,12 +362,8 @@ services:
       crowdsec:
         condition: service_healthy
     volumes:
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /netbird-config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /DATA/AppData/$AppID/config:/netbird-config
     environment:
       NETBIRD_DOMAIN: ""
     entrypoint: ["sh", "-c"]
@@ -497,13 +477,8 @@ services:
       NB_PROXY_DEBUG_LOGS: "false"
       NB_PROXY_CROWDSEC_API_URL: "http://crowdsec:8080"
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /config
-        read_only: true
-      - type: bind
-        source: /DATA/AppData/$AppID/proxy/certs
-        target: /certs
+      - /DATA/AppData/$AppID/config:/config:ro
+      - /DATA/AppData/$AppID/proxy/certs:/certs
     logging:
       driver: json-file
       options:

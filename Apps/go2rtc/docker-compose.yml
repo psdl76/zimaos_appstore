@@ -12,9 +12,7 @@ services:
     environment:
       TZ: Europe/Berlin
     volumes:
-      - type: bind
-        source: /DATA/AppData/$AppID/config
-        target: /config
+      - /DATA/AppData/$AppID/config:/config
     x-casaos:
       envs:
         - container: TZ
