@@ -99,7 +99,7 @@ x-casaos:
     de_de: Die Offizielle, selbst gehostete Nextcloud-Bereitstellung
   thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
   tips:
-    custom:
+    before_install:
       en_us: |
         **Setup Guide:**
         1. Installation runs automatically in the background (takes 1-2 minutes).
