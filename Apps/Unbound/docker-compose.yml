@@ -66,11 +66,7 @@ x-casaos:
       - Prefetching — aktualisiert beliebte Einträge vor dem Ablauf
       - Minimaler Speicherbedarf — typischerweise unter 32 MB RAM
   developer: NLnet Labs
-  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/unbound.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Unbound/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Unbound/screenshot-2.png
-  tagline:
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/unbound.pngtagline:
     en_us: Validating, recursive, caching DNS resolver — privacy-first upstream for AdGuard Home
     de_de: Validierender, rekursiver DNS-Resolver — datenschutzkonformer Upstream für AdGuard Home
     fr_fr: Résolveur DNS récursif et validant — upstream privacy-first pour AdGuard Home

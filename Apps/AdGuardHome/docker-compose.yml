@@ -119,10 +119,10 @@ x-casaos:
   developer: AdGuard
   icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/adguard-home.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AdGuardHome/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AdGuardHome/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AdGuardHome/screenshot-3.png
-  tagline:
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/AdGuardHome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/AdGuardHome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/AdGuardHome/screenshot-3.png
+tagline:
     en_us: Network-wide ad & tracker blocking DNS server
     de_de: Netzwerkweiter Werbe- und Tracker-Blocker als DNS-Server
     fr_fr: Serveur DNS de blocage publicitaire et de traqueurs pour tout le réseau

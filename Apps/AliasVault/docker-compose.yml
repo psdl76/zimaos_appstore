@@ -136,12 +136,7 @@ x-casaos:
     zh_cn: |
       AliasVault 是一款注重隐私的开源密码和电子邮件别名管理器。为每个网站创建独特身份、强密码和随机电子邮件别名。完全端对端加密，内置电子邮件服务器，零第三方依赖。
   developer: AliasVault
-  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/aliasvault.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AliasVault/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AliasVault/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/AliasVault/screenshot-3.png
-  tagline:
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/aliasvault.pngtagline:
     en_us: Privacy-first password & email alias manager
     de_de: Datenschutzorientierter Passwort- & E-Mail-Alias-Manager
     fr_fr: Gestionnaire de mots de passe et d'alias e-mail axé sur la confidentialité

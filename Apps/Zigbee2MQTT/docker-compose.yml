@@ -95,12 +95,7 @@ x-casaos:
     zh_cn: |
       Zigbee2MQTT 通过 MQTT 将 Zigbee 设备连接到 Home Assistant，无需专有网关或云服务，支持 3000+ 设备。
   developer: Koen Kanters
-  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/zigbee2mqtt.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Zigbee2MQTT/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Zigbee2MQTT/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Zigbee2MQTT/screenshot-3.png
-  tagline:
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/zigbee2mqtt.pngtagline:
     en_us: Zigbee to MQTT bridge — 3000+ devices, no cloud, full local control
     de_de: Zigbee-zu-MQTT-Bridge — 3000+ Geräte, kein Cloud, volle lokale Kontrolle
     fr_fr: Pont Zigbee vers MQTT — 3000+ appareils, sans cloud

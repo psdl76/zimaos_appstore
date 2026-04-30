@@ -119,11 +119,7 @@ x-casaos:
       - Persistenter Nachrichtenspeicher
       - Bridges — mehrere Broker verbinden
   developer: Eclipse Foundation
-  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/mosquitto.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Mosquitto/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/psdl76/zimaos_appstore@main/Apps/Mosquitto/screenshot-2.png
-  tagline:
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/mosquitto.pngtagline:
     en_us: Lightweight MQTT broker — the backbone of your smart home
     de_de: Leichtgewichtiger MQTT-Broker — das Rückgrat deines Smart Home
     fr_fr: Broker MQTT léger — l'épine dorsale de votre maison intelligente
