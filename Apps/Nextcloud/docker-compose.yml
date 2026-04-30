@@ -1,18 +1,19 @@
 name: nextcloud
 services:
   nextcloud:
-    image: lscr.io/linuxserver/nextcloud:latest
+    image: nextcloud:latest
     container_name: nextcloud
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Berlin
+      - MYSQL_PASSWORD=nextcloud
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=mariadb
+      - REDIS_HOST=redis
     volumes:
-      - /DATA/AppData/$AppID/config:/config
-      - /DATA/AppData/$AppID/data:/data
+      - /DATA/AppData/$AppID/html:/var/www/html
     ports:
-      - target: 443
-        published: "10443"
+      - target: 80
+        published: "10080"
         protocol: tcp
     restart: unless-stopped
     depends_on:
@@ -22,24 +23,20 @@ services:
       - /dev/dri:/dev/dri
     x-casaos:
       envs:
-        - container: TZ
+        - container: MYSQL_PASSWORD
           description:
-            en_us: Timezone
-            de_de: Zeitzone
+            en_us: Database password
+            de_de: Datenbankpasswort
       ports:
-        - container: "443"
+        - container: "80"
           description:
-            en_us: Web UI HTTPS Port
-            de_de: Web-Oberfläche HTTPS-Port
+            en_us: Web UI HTTP Port
+            de_de: Web-Oberfläche HTTP-Port
       volumes:
-        - container: /config
+        - container: /var/www/html
           description:
-            en_us: Nextcloud configuration and application files
-            de_de: Nextcloud Konfigurations- und Anwendungsdateien
-        - container: /data
-          description:
-            en_us: Nextcloud user data (your files)
-            de_de: Nextcloud Benutzerdaten (deine Dateien)
+            en_us: Nextcloud application and data files
+            de_de: Nextcloud Anwendungs- und Datendateien
 
   mariadb:
     image: mariadb:10.11
@@ -92,53 +89,47 @@ x-casaos:
   description:
     en_us: |
       Nextcloud is a suite of client-server software for creating and using file hosting services.
-      This version uses the robust LinuxServer image with separate MariaDB and Redis containers.
+      This version uses the **Official Nextcloud Image** with separate MariaDB and Redis containers.
       
       It is fully compatible with Cloudflare Tunnels and reverse proxies!
     de_de: |
       Nextcloud ist eine Suite von Client-Server-Software zur Erstellung und Nutzung von File-Hosting-Diensten.
-      Diese Version nutzt das robuste LinuxServer-Image mit separaten MariaDB- und Redis-Containern.
+      Diese Version nutzt das **Offizielle Nextcloud-Image** mit separaten MariaDB- und Redis-Containern.
 
       Sie ist vollständig kompatibel mit Cloudflare Tunnels und Reverse Proxies!
-  developer: LinuxServer.io
+  developer: Nextcloud GmbH
   icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Nextcloud/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Nextcloud/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Nextcloud/screenshot-3.png
   tagline:
-    en_us: Self-hosted file sync and share (LinuxServer version)
-    de_de: Selbst-gehostete Dateisynchronisierung (LinuxServer Version)
+    en_us: The Official, self-hosted Nextcloud deployment
+    de_de: Die Offizielle, selbst gehostete Nextcloud-Bereitstellung
   thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
   tips:
     before_install:
       en_us: |
         **Setup Guide:**
-        1. Access the web interface on `https://[ZimaOS-IP]:10443` (accept the self-signed certificate).
+        1. Access the web interface on `http://[ZimaOS-IP]:10080`.
         2. Create an admin account.
-        3. For database, select "MySQL/MariaDB" and use:
-           - User: `nextcloud`
-           - Password: `nextcloud` (or whatever you set above)
-           - Database: `nextcloud`
-           - Host: `mariadb`
+        3. The database connection is already pre-configured via environment variables. Setup should complete automatically.
         
         **Cloudflare Tunnel Users:**
-        This standard version works flawlessly behind Cloudflare. Just point your tunnel to `https://[ZimaOS-IP]:10443` (make sure to enable "No TLS Verify" in your tunnel settings).
-        Then edit your Nextcloud `config.php` and set `'overwriteprotocol' => 'https',`.
+        Point your tunnel to `http://[ZimaOS-IP]:10080` (HTTP, not HTTPS).
+        To fix login redirection loops with Cloudflare, edit `/DATA/AppData/nextcloud/html/config/config.php` and add:
+        `'overwriteprotocol' => 'https',`
       de_de: |
         **Einrichtungsanleitung:**
-        1. Öffne die Weboberfläche unter `https://[ZimaOS-IP]:10443` (akzeptiere das Zertifikat).
+        1. Öffne die Weboberfläche unter `http://[ZimaOS-IP]:10080`.
         2. Erstelle einen Admin-Account.
-        3. Wähle bei Datenbank "MySQL/MariaDB" und nutze:
-           - User: `nextcloud`
-           - Passwort: `nextcloud` (oder was du oben eingegeben hast)
-           - Datenbank: `nextcloud`
-           - Host: `mariadb`
+        3. Die Datenbankverbindung ist bereits über Umgebungsvariablen vorkonfiguriert und wird automatisch übernommen.
         
         **Cloudflare Tunnel Nutzer:**
-        Diese Standard-Version funktioniert perfekt mit Cloudflare. Leite den Tunnel einfach auf `https://[ZimaOS-IP]:10443` weiter (aktiviere "No TLS Verify" in den Cloudflare Tunnel Einstellungen).
-        Bearbeite danach die `config.php` von Nextcloud und füge `'overwriteprotocol' => 'https',` hinzu.
+        Leite den Tunnel auf `http://[ZimaOS-IP]:10080` weiter (HTTP, nicht HTTPS).
+        Um Login-Probleme mit Cloudflare zu vermeiden, bearbeite die Datei `/DATA/AppData/nextcloud/html/config/config.php` und füge folgende Zeile hinzu:
+        `'overwriteprotocol' => 'https',`
   title:
     en_us: Nextcloud
   index: /
-  port_map: "10443"
+  port_map: "10080"
