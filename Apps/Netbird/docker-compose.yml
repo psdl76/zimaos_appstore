@@ -547,7 +547,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/NetBird/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/NetBird/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/NetBird/screenshot-3.png
-tagline:
+  tagline:
     en_us: Open-source WireGuard-based secure network overlay — self-hosted
     de_de: Quelloffenes WireGuard-Netzwerk-Overlay — selbst gehostet
     fr_fr: Réseau overlay WireGuard open-source — auto-hébergé

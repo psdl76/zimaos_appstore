@@ -78,7 +78,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/HomeAssistant/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/HomeAssistant/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/HomeAssistant/screenshot-3.png
-tagline:
+  tagline:
     en_us: Open-source home automation — local control, 3000+ integrations
     de_de: Open-Source-Heimautomatisierung — lokale Steuerung, 3000+ Integrationen
     fr_fr: Domotique open-source — contrôle local, 3000+ intégrations

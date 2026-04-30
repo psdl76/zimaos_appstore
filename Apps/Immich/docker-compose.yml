@@ -177,7 +177,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Immich/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Immich/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Immich/screenshot-3.png
-tagline:
+  tagline:
     en_us: Self-hosted Google Photos alternative — AI search, face recognition, auto backup
     de_de: Selbst gehostete Google Photos-Alternative — KI-Suche, Gesichtserkennung, Auto-Backup
     fr_fr: Alternative Google Photos auto-hébergée — recherche IA, reconnaissance faciale
