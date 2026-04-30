@@ -61,7 +61,8 @@ x-casaos:
       - Funktioniert als Streaming-Backend für Home Assistant und Frigate NVR
       - Extrem leichtgewichtig — typischerweise unter 50 MB RAM im Leerlauf
   developer: AlexxIT
-  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/go2rtc.pngtagline:
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/go2rtc.png
+  tagline:
     en_us: Universal camera streaming — WebRTC, RTSP, HomeKit, ONVIF, near-zero latency
     de_de: Universelles Kamera-Streaming — WebRTC, RTSP, HomeKit, ONVIF, nahezu null Latenz
     fr_fr: Streaming caméra universel — WebRTC, RTSP, HomeKit, ONVIF, latence quasi nulle

@@ -98,7 +98,8 @@ x-casaos:
 
       Sie ist vollständig kompatibel mit Cloudflare Tunnels und Reverse Proxies!
   developer: Nextcloud GmbH
-  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.pngtagline:
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
+  tagline:
     en_us: The Official, self-hosted Nextcloud deployment
     de_de: Die Offizielle, selbst gehostete Nextcloud-Bereitstellung
   thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png

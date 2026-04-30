@@ -65,7 +65,8 @@ x-casaos:
     zh_cn: |
       Matterbridge 是一个 Matter 网桥，可将现有智能家居设备连接到任何 Matter 控制器——Apple Home、Google Home、Amazon Alexa 等，无需替换现有设置。
   developer: Luligu
-  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/matterbridge.pngtagline:
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/matterbridge.png
+  tagline:
     en_us: Matter bridge — connect any smart home device to Apple Home, Google Home & Alexa
     de_de: Matter-Bridge — beliebige Smart-Home-Geräte mit Apple Home, Google Home & Alexa verbinden
     fr_fr: Pont Matter — connectez n'importe quel appareil à Apple Home, Google Home et Alexa
