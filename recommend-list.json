@@ -2,6 +2,6 @@
   { "appid": "immich" },
   { "appid": "home-assistant" },
   { "appid": "adguard-home" },
-  { "appid": "nextcloud-aio" },
+  { "appid": "nextcloud" },
   { "appid": "zigbee2mqtt" }
 ]
