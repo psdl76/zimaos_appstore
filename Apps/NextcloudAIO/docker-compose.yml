@@ -25,7 +25,7 @@ services:
       - /dev/dri:/dev/dri
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /DATA/AppData/$AppID/master-config:/mnt/docker-aio-config
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
     environment:
       NEXTCLOUD_DATADIR: /DATA/AppData/nextcloud-aio/ncdata
       NEXTCLOUD_UPLOAD_LIMIT: 16G
@@ -69,15 +69,14 @@ services:
             en_us: AIO Admin Interface HTTPS (alternative to 8080)
             de_de: AIO-Admin-Oberfläche HTTPS (Alternative zu 8080)
       volumes:
-        - container: /mnt/docker-aio-config
-          description:
-            en_us: AIO master container config (named volume — managed automatically)
-            de_de: AIO-Mastercontainer-Konfiguration (Named Volume — wird automatisch verwaltet)
         - container: /var/run/docker.sock
           description:
             en_us: Docker socket — required for AIO to manage Nextcloud containers
             de_de: Docker-Socket — erforderlich damit AIO die Nextcloud-Container verwalten kann
     container_name: nextcloud-aio-mastercontainer
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
 x-casaos:
   architectures:
     - amd64
