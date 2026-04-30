@@ -23,9 +23,6 @@ services:
         published: "10080"
         protocol: tcp
     restart: unless-stopped
-    depends_on:
-      - mariadb
-      - redis
     devices:
       - /dev/dri:/dev/dri
     x-casaos:
