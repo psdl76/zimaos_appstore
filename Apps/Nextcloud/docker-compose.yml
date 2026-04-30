@@ -26,19 +26,6 @@ services:
     devices:
       - /dev/dri:/dev/dri
     x-casaos:
-      envs:
-        - container: NEXTCLOUD_ADMIN_USER
-          description:
-            en_us: Nextcloud Admin Username
-            de_de: Nextcloud Admin-Benutzername
-        - container: NEXTCLOUD_ADMIN_PASSWORD
-          description:
-            en_us: Nextcloud Admin Password
-            de_de: Nextcloud Admin-Passwort
-        - container: MYSQL_PASSWORD
-          description:
-            en_us: Database password
-            de_de: Datenbankpasswort
       ports:
         - container: "80"
           description:
@@ -67,15 +54,6 @@ services:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
     restart: unless-stopped
     x-casaos:
-      envs:
-        - container: MYSQL_ROOT_PASSWORD
-          description:
-            en_us: MariaDB root password
-            de_de: MariaDB Root-Passwort
-        - container: MYSQL_PASSWORD
-          description:
-            en_us: MariaDB nextcloud user password
-            de_de: MariaDB Nextcloud-Passwort
       volumes:
         - container: /var/lib/mysql
           description:
@@ -121,26 +99,26 @@ x-casaos:
     de_de: Die Offizielle, selbst gehostete Nextcloud-Bereitstellung
   thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextcloud.png
   tips:
-    before_install:
+    custom:
       en_us: |
         **Setup Guide:**
         1. Installation runs automatically in the background (takes 1-2 minutes).
         2. Access the web interface on `http://[ZimaOS-IP]:10080`.
-        3. Log in with the admin credentials you set above (Default: admin / nextcloud).
+        3. Log in with: Username: **admin** | Password: **nextcloud**
         
         **Cloudflare Tunnel Users:**
         Point your tunnel to `http://[ZimaOS-IP]:10080` (HTTP, not HTTPS).
-        To fix login redirection loops with Cloudflare, edit `/DATA/AppData/nextcloud/html/config/config.php` and add:
+        To fix login redirection loops with Cloudflare, edit `/DATA/AppData/Nextcloud/html/config/config.php` and add:
         `'overwriteprotocol' => 'https',`
       de_de: |
         **Einrichtungsanleitung:**
         1. Die Installation läuft nach dem ersten Start im Hintergrund (kann ca. 1-2 Minuten dauern).
         2. Öffne danach die Weboberfläche unter `http://[ZimaOS-IP]:10080`.
-        3. Logge dich mit den oben festgelegten Admin-Daten ein (Standard: admin / nextcloud).
+        3. Logge dich mit folgenden Daten ein: Username: **admin** | Passwort: **nextcloud**
         
         **Cloudflare Tunnel Nutzer:**
         Leite den Tunnel auf `http://[ZimaOS-IP]:10080` weiter (HTTP, nicht HTTPS).
-        Um Login-Probleme mit Cloudflare zu vermeiden, bearbeite die Datei `/DATA/AppData/nextcloud/html/config/config.php` und füge folgende Zeile hinzu:
+        Um Login-Probleme mit Cloudflare zu vermeiden, bearbeite die Datei `/DATA/AppData/Nextcloud/html/config/config.php` und füge folgende Zeile hinzu:
         `'overwriteprotocol' => 'https',`
   title:
     en_us: Nextcloud
