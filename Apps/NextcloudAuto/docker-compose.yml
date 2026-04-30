@@ -1,4 +1,4 @@
-name: nextcloud
+name: nextcloud-auto
 services:
   nextcloud:
     image: nextcloud:latest
@@ -76,7 +76,7 @@ x-casaos:
     - amd64
     - arm64
   main: nextcloud
-  store_app_id: nextcloud
+  store_app_id: nextcloud-auto
   author: CasaOS Team
   category: psdl76
   description:
@@ -119,6 +119,7 @@ x-casaos:
         Um Login-Probleme mit Cloudflare zu vermeiden, bearbeite die Datei `/DATA/AppData/Nextcloud/html/config/config.php` und füge folgende Zeile hinzu:
         `'overwriteprotocol' => 'https',`
   title:
-    en_us: Nextcloud
+    en_us: Nextcloud (Auto-Setup)
+    de_de: Nextcloud (Auto-Setup)
   index: /
   port_map: "10080"
